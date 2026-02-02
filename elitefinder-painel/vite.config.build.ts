@@ -6,17 +6,16 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Production build config - no server dependency
+// Production build config - clean Vercel structure
 export default defineConfig({
   build: {
-    outDir: "dist/spa",
+    outDir: "dist",
   },
   plugins: [react()],
   resolve: {
     extensions: [".ts", ".tsx", ".js", ".jsx", ".json"],
     alias: {
-      "@": path.resolve(__dirname, "./client"),
-      "@shared": path.resolve(__dirname, "./shared"),
+      "@": path.resolve(__dirname, "./src"),
     },
   },
 });
