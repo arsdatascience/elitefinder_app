@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Sparkles, RefreshCw, Eye, Calendar, User, MessageSquare, TrendingUp, Search, Filter } from 'lucide-react';
-import { apiFetchAtendimentos, apiTriggerManualAnalysis } from '../lib/analyticsApi';
+import { apiFetchAtendimentos, apiTriggerManualAnalysis } from '@/lib/analyticsApi';
 
 interface Atendimento {
   id_atendimento: number;

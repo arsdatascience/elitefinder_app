@@ -3,8 +3,8 @@ import { Link, useLocation } from 'react-router-dom';
 import { Search, Gauge, TrendingUp, TrendingDown, Users, CheckCircle, XCircle, Calendar, FileText, Bell, AlertTriangle, X, Clock, BarChart2, Eye } from 'lucide-react';
 import Login from './Login';
 import logo from '../assets/12597368.png';
-import { apiFetchMetricsOverall, apiFetchMetricsExtended, OverallAnalyticsResponse, ExtendedAnalyticsResponse, apiExportAnalyticsCsv, apiExportConversationsCsv as apiExportConversationsFromBackend, apiExportSalesReportCsv } from '../lib/analyticsApi';
-import { apiExportConversationsCsv, apiFetchAuditConversations, AuditConversation } from '../lib/conversationsApi';
+import { apiFetchMetricsOverall, apiFetchMetricsExtended, OverallAnalyticsResponse, ExtendedAnalyticsResponse, apiExportAnalyticsCsv, apiExportConversationsCsv as apiExportConversationsFromBackend, apiExportSalesReportCsv } from '@/lib/analyticsApi';
+import { apiExportConversationsCsv, apiFetchAuditConversations, AuditConversation } from '@/lib/conversationsApi';
 
 // Dados simulados caso a IA não responda
 const mockAnalyticsData = [
@@ -112,10 +112,10 @@ export default function Index() {
           apiFetchMetricsOverall(timeRange),
           apiFetchMetricsExtended(timeRange)
         ]);
-        
+
         if (overall) setRealMetricsOverall(overall);
         if (extended) setRealMetricsExtended(extended);
-        
+
         if (!overall && !extended) {
           setMetricsError('Não foi possível carregar as métricas');
         }
@@ -130,11 +130,11 @@ export default function Index() {
     const loadAuditConversations = async () => {
       setConversationsLoading(true);
       try {
-        const filters: any = { 
-          timeRange, 
+        const filters: any = {
+          timeRange,
           sentiment: filter !== 'Todos' ? filter : undefined,
           search: searchTerm || undefined,
-          limit: 100 
+          limit: 100
         };
         if (timeRange === 'PERSONALIZADO') {
           filters.startDate = startDate;
@@ -347,7 +347,7 @@ export default function Index() {
           }
         }
       }
-    } catch {/* ignora e cai em fallback */}
+    } catch {/* ignora e cai em fallback */ }
     // Fallback imediato para tela WAHA + gerar QR
     setIsCheckingConnection(false);
     setAttempts(a => a + 1);
@@ -394,13 +394,13 @@ export default function Index() {
         }
         const data = await res.json();
         const currentStatus = data.status;
-        
+
         // Log apenas quando status muda
         if (currentStatus !== lastStatus && !cancelled) {
           console.log('Status WAHA:', lastStatus, '→', currentStatus);
           setLastStatus(currentStatus);
         }
-        
+
         // Detectar conexão bem-sucedida
         if (currentStatus === 'WORKING') {
           if (!cancelled) {
@@ -440,25 +440,25 @@ export default function Index() {
           if (!cancelled && !isRecovering) {
             // Se estava em PAIRING antes, pode ser falha legítima de timeout
             const wasAuthenticating = lastStatus === 'PAIRING' || authInProgress;
-            
+
             console.error('❌ Sessão FAILED detectada.');
             console.log('Estava autenticando?', wasAuthenticating);
-            
+
             setConnectionStatus('Falha na conexão');
             setAuthInProgress(false);
             setFailedAttempts(prev => prev + 1);
-            
+
             if (wasAuthenticating) {
               setSessionError('⏱️ Timeout na autenticação. O celular demorou muito. Tente novamente e seja mais rápido ao confirmar.');
             } else {
               setSessionError('A conexão falhou. Gerando novo QR Code automaticamente...');
             }
-            
+
             // Auto-recovery com delay maior para não interferir
             setTimeout(async () => {
               if (cancelled) return;
               setIsRecovering(true);
-              
+
               try {
                 console.log('🔄 Iniciando auto-recovery...');
                 await fetch(`${wahaBase}/api/sessions/default/stop`, { method: 'POST', headers: wahaGetHeaders });
@@ -469,7 +469,7 @@ export default function Index() {
                   body: JSON.stringify({ name: 'default' })
                 });
                 await new Promise(r => setTimeout(r, 3000));
-                
+
                 setQrSrc(null);
                 fetchQR();
               } catch (err) {
@@ -550,14 +550,14 @@ export default function Index() {
             if (statusRes.ok) {
               const statusData = await statusRes.json();
               console.log('Status inicial da sessão:', statusData.status);
-              
+
               // Se já está WORKING, vai direto pro dashboard
               if (statusData?.status === 'WORKING') {
                 setConnectionStatus('Ativo');
                 setStep('dashboard');
                 return;
               }
-              
+
               // Se está SCAN_QR_CODE, só buscar QR
               if (statusData?.status === 'SCAN_QR_CODE') {
                 console.log('Sessão aguardando QR, buscando...');
@@ -568,7 +568,7 @@ export default function Index() {
           } catch (err) {
             console.error('Erro ao verificar status inicial:', err);
           }
-          
+
           // Caso contrário, tenta iniciar a sessão
           console.log('Iniciando sessão WAHA...');
           const started = await startSessionWithFallback();
@@ -580,7 +580,7 @@ export default function Index() {
                 if (checkRes.ok) {
                   const checkData = await checkRes.json();
                   console.log('Status pós-start:', checkData.status);
-                  
+
                   if (checkData?.status === 'WORKING') {
                     setConnectionStatus('Ativo');
                     setStep('dashboard');
@@ -823,7 +823,7 @@ export default function Index() {
     return conversations
       .map(c => {
         const alerts = [];
-        
+
         // Alerta 1: Score crítico (< 5.0)
         const score = Number(c.pontuacao_geral || 0);
         if (score < 5.0 && score > 0) {
@@ -840,12 +840,12 @@ export default function Index() {
             borderColor: 'border-red-200'
           });
         }
-        
+
         // Alerta 2: Palavras-chave negativas
-        const detectedKeywords = negativeKeywords.filter(keyword => 
+        const detectedKeywords = negativeKeywords.filter(keyword =>
           (c.mensagem_trecho || '').toLowerCase().includes(keyword.toLowerCase())
         );
-        
+
         if (detectedKeywords.length > 0) {
           alerts.push({
             id: c.id_atendimento,
@@ -861,7 +861,7 @@ export default function Index() {
             borderColor: detectedKeywords.length > 2 ? 'border-red-200' : 'border-orange-200'
           });
         }
-        
+
         // Alerta 3: Sentimento negativo + tipo reclamação/cancelamento
         if (c.sentimento_geral === 'Negativo' && (c.tipo_atendimento === 'Reclamação' || c.tipo_atendimento === 'Cancelamento')) {
           alerts.push({
@@ -877,7 +877,7 @@ export default function Index() {
             borderColor: 'border-red-200'
           });
         }
-        
+
         return alerts;
       })
       .flat()
@@ -923,253 +923,253 @@ export default function Index() {
   }
 
   // ===================== TELA 2: CONEXÃO WAHA =====================
- if (step === 'waha') {
-  return (
-    <div className="flex flex-col min-h-screen justify-center items-center bg-gray-50">
-      <img src={logo} alt="Logo" className="w-28 mb-6" />
-      <h1 className="text-3xl font-bold text-gray-800 mb-2">Painel WhatsApp - Plataforma de Análise</h1>
-      {sessionError && (
-        <div className="text-xs mb-4 px-4 py-2 rounded-md bg-red-50 border border-red-200 text-red-600 max-w-md">
-          {sessionError}
-        </div>
-      )}
-      
-      {failedAttempts > 0 && (
-        <div className="text-xs mb-4 px-4 py-2 rounded-md bg-yellow-50 border border-yellow-200 text-yellow-700 max-w-md">
-          ⚠️ Tentativa {failedAttempts} - {failedAttempts >= 3 ? 'Se continuar falhando, verifique: internet do celular estável, WhatsApp atualizado, sem bloqueios de firewall.' : 'Escaneie o QR rapidamente e mantenha o celular com internet estável.'}
-        </div>
-      )}
-      
-      {authInProgress && (
-        <div className="text-xs mb-4 px-4 py-3 rounded-md bg-blue-50 border border-blue-200 text-blue-700 max-w-md animate-pulse">
-          <div className="flex items-center gap-2">
-            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-            <span className="font-semibold">📱 Autenticando no celular...</span>
+  if (step === 'waha') {
+    return (
+      <div className="flex flex-col min-h-screen justify-center items-center bg-gray-50">
+        <img src={logo} alt="Logo" className="w-28 mb-6" />
+        <h1 className="text-3xl font-bold text-gray-800 mb-2">Painel WhatsApp - Plataforma de Análise</h1>
+        {sessionError && (
+          <div className="text-xs mb-4 px-4 py-2 rounded-md bg-red-50 border border-red-200 text-red-600 max-w-md">
+            {sessionError}
           </div>
-          <p className="mt-1 text-[11px]">Aguarde enquanto o WhatsApp confirma a conexão. Não feche o app!</p>
-        </div>
-      )}
-      
-      {/* Modal de Termos de Uso (branding genérico) */}
-      {showTermsModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col">
-            <div className="p-6 border-b border-gray-200">
-              <h2 className="text-2xl font-bold text-gray-800">Termos de Uso da Plataforma</h2>
-            </div>
-            <div className="p-6 overflow-y-auto flex-1">
-              <div className="prose prose-sm max-w-none">
-                <h3 className="text-lg font-semibold text-gray-800 mb-3">1. Aceitação dos Termos</h3>
-                <p className="text-gray-600 mb-4">Ao utilizar esta plataforma de análise e conectar sua conta WhatsApp Business, você declara que leu, compreendeu e aceita estes termos e a política de privacidade.</p>
-                
-                <h3 className="text-lg font-semibold text-gray-800 mb-3">2. Uso da Plataforma</h3>
-                <p className="text-gray-600 mb-4">Ao conectar sua conta, você autoriza nossa plataforma a:</p>
-                <ul className="list-disc list-inside text-gray-600 mb-4 space-y-1">
-                  <li>Acessar e analisar conversas de atendimento</li>
-                  <li>Processar mensagens via inteligência artificial</li>
-                  <li>Gerar relatórios e métricas de qualidade</li>
-                  <li>Armazenar dados de forma segura e criptografada</li>
-                </ul>
+        )}
 
-                <h3 className="text-lg font-semibold text-gray-800 mb-3">3. Privacidade e Segurança</h3>
-                <p className="text-gray-600 mb-4">Tratamos os dados conforme a LGPD. Garantimos:</p>
-                <ul className="list-disc list-inside text-gray-600 mb-4 space-y-1">
-                  <li>Criptografia nas comunicações</li>
-                  <li>Armazenamento seguro</li>
-                  <li>Não compartilhamento indevido</li>
-                  <li>Direito de solicitar exclusão de dados</li>
-                </ul>
-
-                <h3 className="text-lg font-semibold text-gray-800 mb-3">4. Responsabilidades</h3>
-                <p className="text-gray-600 mb-4">Você é responsável por manter a confidencialidade de suas credenciais e pelo uso adequado dos recursos.</p>
-
-                <h3 className="text-lg font-semibold text-gray-800 mb-3">5. Modificações</h3>
-                <p className="text-gray-600 mb-4">Podemos ajustar estes termos; alterações relevantes serão comunicadas.</p>
-                
-                <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                  <p className="text-sm text-gray-600">
-                    Para ler a versão completa, acesse:{' '}
-                    <a 
-                      href="/termos" 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-indigo-600 hover:text-indigo-800 underline font-medium"
-                    >
-                      Página Completa de Termos
-                    </a>
-                  </p>
-                </div>
-              </div>
-            </div>
-            <div className="p-6 border-t border-gray-200 flex gap-3">
-              <button
-                onClick={() => setShowTermsModal(false)}
-                className="flex-1 px-6 py-3 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 transition font-medium"
-              >
-                Voltar
-              </button>
-              <button
-                onClick={() => {
-                  setTermsAccepted(true);
-                  setShowTermsModal(false);
-                }}
-                className="flex-1 px-6 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition font-medium"
-              >
-                Li e Aceito os Termos
-              </button>
-            </div>
+        {failedAttempts > 0 && (
+          <div className="text-xs mb-4 px-4 py-2 rounded-md bg-yellow-50 border border-yellow-200 text-yellow-700 max-w-md">
+            ⚠️ Tentativa {failedAttempts} - {failedAttempts >= 3 ? 'Se continuar falhando, verifique: internet do celular estável, WhatsApp atualizado, sem bloqueios de firewall.' : 'Escaneie o QR rapidamente e mantenha o celular com internet estável.'}
           </div>
-        </div>
-      )}
+        )}
 
-      {connectionStatus === 'Aguardando QR Code' && (
-
-        <div className="text-center">
-          {isRecovering && (
-            <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-xl max-w-md mx-auto">
-              <div className="flex items-center justify-center gap-3 mb-2">
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-yellow-600"></div>
-                <p className="text-sm font-semibold text-yellow-800">Recuperando sessão...</p>
-              </div>
-              <p className="text-xs text-yellow-600">A conexão anterior falhou. Gerando novo QR Code...</p>
+        {authInProgress && (
+          <div className="text-xs mb-4 px-4 py-3 rounded-md bg-blue-50 border border-blue-200 text-blue-700 max-w-md animate-pulse">
+            <div className="flex items-center gap-2">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+              <span className="font-semibold">📱 Autenticando no celular...</span>
             </div>
-          )}
-          {qrSrc || isLoadingQR ? (
-            <>
-              <div className="relative p-4 border rounded-lg shadow mb-6 bg-white mx-auto w-fit">
-                {qrSrc ? (
-                  <>
-                    <img src={qrSrc} alt="QR Code de autenticação" className="h-64 w-64 mx-auto" />
-                    {/* Overlay cinza se termos não aceitos */}
-                    {!termsAccepted && (
-                      <div className="absolute inset-0 bg-gray-900 bg-opacity-70 rounded-lg flex flex-col items-center justify-center p-6">
-                        <div className="bg-white rounded-xl p-6 max-w-sm text-center shadow-2xl">
-                          <AlertTriangle className="w-12 h-12 text-yellow-500 mx-auto mb-4" />
-                          <h3 className="text-lg font-bold text-gray-800 mb-2">Antes de continuar</h3>
-                          <p className="text-sm text-gray-600 mb-4">Por favor, leia e aceite nossos termos de uso para escanear o QR Code</p>
-                          <button
-                            onClick={() => setShowTermsModal(true)}
-                            className="w-full px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium text-sm"
-                          >
-                            Ler Termos de Uso
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <div className="h-64 w-64 flex flex-col items-center justify-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mb-4"></div>
-                    <p className="text-gray-500 text-sm">Carregando QR Code...</p>
-                  </div>
-                )}
+            <p className="mt-1 text-[11px]">Aguarde enquanto o WhatsApp confirma a conexão. Não feche o app!</p>
+          </div>
+        )}
+
+        {/* Modal de Termos de Uso (branding genérico) */}
+        {showTermsModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col">
+              <div className="p-6 border-b border-gray-200">
+                <h2 className="text-2xl font-bold text-gray-800">Termos de Uso da Plataforma</h2>
               </div>
-              {termsAccepted ? (
-                <p className="text-sm text-gray-600 mb-4">Escaneie o código acima com seu WhatsApp</p>
-              ) : (
-                <p className="text-sm text-gray-500 mb-4">
-                  Aceite os{' '}
-                  <button
-                    onClick={() => setShowTermsModal(true)}
-                    className="text-indigo-600 hover:text-indigo-800 underline font-medium"
-                  >
-                    termos de uso
-                  </button>
-                  {' '}para escanear o QR Code
-                </p>
-              )}
-              
-              {/* Dicas para evitar falhas */}
-              {termsAccepted && (
-                <div className="mb-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl max-w-md mx-auto shadow-sm">
-                  <p className="text-sm font-bold text-blue-900 mb-3 flex items-center gap-2">
-                    <span className="text-lg">💡</span> Como escanear corretamente:
-                  </p>
-                  <ol className="text-xs text-blue-800 space-y-2 text-left">
-                    <li className="flex items-start gap-2">
-                      <span className="font-bold text-indigo-600 min-w-[20px]">1.</span>
-                      <span>Abra o <strong>WhatsApp</strong> no celular</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="font-bold text-indigo-600 min-w-[20px]">2.</span>
-                      <span>Toque em <strong>⋮ (menu)</strong> → <strong>Aparelhos conectados</strong></span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="font-bold text-indigo-600 min-w-[20px]">3.</span>
-                      <span>Toque em <strong>"Conectar um aparelho"</strong></span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="font-bold text-indigo-600 min-w-[20px]">4.</span>
-                      <span>Aponte a câmera para o QR Code acima</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="font-bold text-indigo-600 min-w-[20px]">5.</span>
-                      <span className="font-semibold text-red-700">Aguarde até aparecer "Conectado" aqui na tela!</span>
-                    </li>
-                  </ol>
-                  <div className="mt-3 p-2 bg-yellow-100 border border-yellow-300 rounded-lg">
-                    <p className="text-[10px] text-yellow-900 font-semibold">
-                      ⚠️ IMPORTANTE: Mantenha o celular com internet <strong>estável</strong> durante todo o processo (pode levar 10-30 segundos)
+              <div className="p-6 overflow-y-auto flex-1">
+                <div className="prose prose-sm max-w-none">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-3">1. Aceitação dos Termos</h3>
+                  <p className="text-gray-600 mb-4">Ao utilizar esta plataforma de análise e conectar sua conta WhatsApp Business, você declara que leu, compreendeu e aceita estes termos e a política de privacidade.</p>
+
+                  <h3 className="text-lg font-semibold text-gray-800 mb-3">2. Uso da Plataforma</h3>
+                  <p className="text-gray-600 mb-4">Ao conectar sua conta, você autoriza nossa plataforma a:</p>
+                  <ul className="list-disc list-inside text-gray-600 mb-4 space-y-1">
+                    <li>Acessar e analisar conversas de atendimento</li>
+                    <li>Processar mensagens via inteligência artificial</li>
+                    <li>Gerar relatórios e métricas de qualidade</li>
+                    <li>Armazenar dados de forma segura e criptografada</li>
+                  </ul>
+
+                  <h3 className="text-lg font-semibold text-gray-800 mb-3">3. Privacidade e Segurança</h3>
+                  <p className="text-gray-600 mb-4">Tratamos os dados conforme a LGPD. Garantimos:</p>
+                  <ul className="list-disc list-inside text-gray-600 mb-4 space-y-1">
+                    <li>Criptografia nas comunicações</li>
+                    <li>Armazenamento seguro</li>
+                    <li>Não compartilhamento indevido</li>
+                    <li>Direito de solicitar exclusão de dados</li>
+                  </ul>
+
+                  <h3 className="text-lg font-semibold text-gray-800 mb-3">4. Responsabilidades</h3>
+                  <p className="text-gray-600 mb-4">Você é responsável por manter a confidencialidade de suas credenciais e pelo uso adequado dos recursos.</p>
+
+                  <h3 className="text-lg font-semibold text-gray-800 mb-3">5. Modificações</h3>
+                  <p className="text-gray-600 mb-4">Podemos ajustar estes termos; alterações relevantes serão comunicadas.</p>
+
+                  <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <p className="text-sm text-gray-600">
+                      Para ler a versão completa, acesse:{' '}
+                      <a
+                        href="/termos"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-indigo-600 hover:text-indigo-800 underline font-medium"
+                      >
+                        Página Completa de Termos
+                      </a>
                     </p>
                   </div>
                 </div>
-              )}
-              
-              <button
-                className="px-6 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition disabled:bg-gray-400"
-                onClick={handleRestart}
-                disabled={isRestarting || isRecovering}
-              >
-                {isRestarting || isRecovering ? 'Gerando novo QR...' : 'Gerar novo QR Code'}
-              </button>
-            </>
-          ) : (
-            <>
-              <div className="mb-6">
-                <div className="inline-flex items-center justify-center w-32 h-32 rounded-full bg-indigo-100 mb-4">
-                  <svg className="w-16 h-16 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
-                  </svg>
-                </div>
-                <h2 className="text-xl font-semibold text-gray-800 mb-2">Conectar WhatsApp</h2>
-                <p className="text-sm text-gray-600 mb-6">Clique no botão abaixo para gerar o QR Code e conectar sua conta</p>
               </div>
-              <div className="flex flex-col gap-3 w-full max-w-sm mx-auto">
+              <div className="p-6 border-t border-gray-200 flex gap-3">
                 <button
-                  className="px-8 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition disabled:bg-gray-400 font-semibold shadow-lg"
-                  onClick={handleGenerateQR}
-                  disabled={isLoadingQR}
+                  onClick={() => setShowTermsModal(false)}
+                  className="flex-1 px-6 py-3 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 transition font-medium"
                 >
-                  {isLoadingQR ? 'Carregando...' : 'Gerar QR Code'}
+                  Voltar
                 </button>
                 <button
-                  className="px-8 py-3 bg-white text-gray-700 rounded-xl border border-gray-300 hover:bg-gray-100 transition font-semibold shadow-sm"
                   onClick={() => {
-                    setSessionError(null);
-                    setAttempts(0);
-                    setQrSrc(null);
-                    setConnectionStatus('Aguardando QR Code');
-                    void (async () => {
-                      const ok = await startSessionWithFallback();
-                      if (!ok) {
-                        setSessionError('Falha ao iniciar sessão. Verifique o WAHA e tente novamente.');
-                      }
-                      fetchQR();
-                    })();
+                    setTermsAccepted(true);
+                    setShowTermsModal(false);
                   }}
+                  className="flex-1 px-6 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition font-medium"
                 >
-                  Tentar Novamente Conexão
+                  Li e Aceito os Termos
                 </button>
               </div>
-            </>
-          )}
-        </div>
-      )}
-      
-      {/* Mensagens de status específicas removidas; a navegação ocorre automaticamente ao conectar */}
-    </div>
-  );
-}
+            </div>
+          </div>
+        )}
+
+        {connectionStatus === 'Aguardando QR Code' && (
+
+          <div className="text-center">
+            {isRecovering && (
+              <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-xl max-w-md mx-auto">
+                <div className="flex items-center justify-center gap-3 mb-2">
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-yellow-600"></div>
+                  <p className="text-sm font-semibold text-yellow-800">Recuperando sessão...</p>
+                </div>
+                <p className="text-xs text-yellow-600">A conexão anterior falhou. Gerando novo QR Code...</p>
+              </div>
+            )}
+            {qrSrc || isLoadingQR ? (
+              <>
+                <div className="relative p-4 border rounded-lg shadow mb-6 bg-white mx-auto w-fit">
+                  {qrSrc ? (
+                    <>
+                      <img src={qrSrc} alt="QR Code de autenticação" className="h-64 w-64 mx-auto" />
+                      {/* Overlay cinza se termos não aceitos */}
+                      {!termsAccepted && (
+                        <div className="absolute inset-0 bg-gray-900 bg-opacity-70 rounded-lg flex flex-col items-center justify-center p-6">
+                          <div className="bg-white rounded-xl p-6 max-w-sm text-center shadow-2xl">
+                            <AlertTriangle className="w-12 h-12 text-yellow-500 mx-auto mb-4" />
+                            <h3 className="text-lg font-bold text-gray-800 mb-2">Antes de continuar</h3>
+                            <p className="text-sm text-gray-600 mb-4">Por favor, leia e aceite nossos termos de uso para escanear o QR Code</p>
+                            <button
+                              onClick={() => setShowTermsModal(true)}
+                              className="w-full px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium text-sm"
+                            >
+                              Ler Termos de Uso
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div className="h-64 w-64 flex flex-col items-center justify-center">
+                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mb-4"></div>
+                      <p className="text-gray-500 text-sm">Carregando QR Code...</p>
+                    </div>
+                  )}
+                </div>
+                {termsAccepted ? (
+                  <p className="text-sm text-gray-600 mb-4">Escaneie o código acima com seu WhatsApp</p>
+                ) : (
+                  <p className="text-sm text-gray-500 mb-4">
+                    Aceite os{' '}
+                    <button
+                      onClick={() => setShowTermsModal(true)}
+                      className="text-indigo-600 hover:text-indigo-800 underline font-medium"
+                    >
+                      termos de uso
+                    </button>
+                    {' '}para escanear o QR Code
+                  </p>
+                )}
+
+                {/* Dicas para evitar falhas */}
+                {termsAccepted && (
+                  <div className="mb-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl max-w-md mx-auto shadow-sm">
+                    <p className="text-sm font-bold text-blue-900 mb-3 flex items-center gap-2">
+                      <span className="text-lg">💡</span> Como escanear corretamente:
+                    </p>
+                    <ol className="text-xs text-blue-800 space-y-2 text-left">
+                      <li className="flex items-start gap-2">
+                        <span className="font-bold text-indigo-600 min-w-[20px]">1.</span>
+                        <span>Abra o <strong>WhatsApp</strong> no celular</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="font-bold text-indigo-600 min-w-[20px]">2.</span>
+                        <span>Toque em <strong>⋮ (menu)</strong> → <strong>Aparelhos conectados</strong></span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="font-bold text-indigo-600 min-w-[20px]">3.</span>
+                        <span>Toque em <strong>"Conectar um aparelho"</strong></span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="font-bold text-indigo-600 min-w-[20px]">4.</span>
+                        <span>Aponte a câmera para o QR Code acima</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="font-bold text-indigo-600 min-w-[20px]">5.</span>
+                        <span className="font-semibold text-red-700">Aguarde até aparecer "Conectado" aqui na tela!</span>
+                      </li>
+                    </ol>
+                    <div className="mt-3 p-2 bg-yellow-100 border border-yellow-300 rounded-lg">
+                      <p className="text-[10px] text-yellow-900 font-semibold">
+                        ⚠️ IMPORTANTE: Mantenha o celular com internet <strong>estável</strong> durante todo o processo (pode levar 10-30 segundos)
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                <button
+                  className="px-6 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition disabled:bg-gray-400"
+                  onClick={handleRestart}
+                  disabled={isRestarting || isRecovering}
+                >
+                  {isRestarting || isRecovering ? 'Gerando novo QR...' : 'Gerar novo QR Code'}
+                </button>
+              </>
+            ) : (
+              <>
+                <div className="mb-6">
+                  <div className="inline-flex items-center justify-center w-32 h-32 rounded-full bg-indigo-100 mb-4">
+                    <svg className="w-16 h-16 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+                    </svg>
+                  </div>
+                  <h2 className="text-xl font-semibold text-gray-800 mb-2">Conectar WhatsApp</h2>
+                  <p className="text-sm text-gray-600 mb-6">Clique no botão abaixo para gerar o QR Code e conectar sua conta</p>
+                </div>
+                <div className="flex flex-col gap-3 w-full max-w-sm mx-auto">
+                  <button
+                    className="px-8 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition disabled:bg-gray-400 font-semibold shadow-lg"
+                    onClick={handleGenerateQR}
+                    disabled={isLoadingQR}
+                  >
+                    {isLoadingQR ? 'Carregando...' : 'Gerar QR Code'}
+                  </button>
+                  <button
+                    className="px-8 py-3 bg-white text-gray-700 rounded-xl border border-gray-300 hover:bg-gray-100 transition font-semibold shadow-sm"
+                    onClick={() => {
+                      setSessionError(null);
+                      setAttempts(0);
+                      setQrSrc(null);
+                      setConnectionStatus('Aguardando QR Code');
+                      void (async () => {
+                        const ok = await startSessionWithFallback();
+                        if (!ok) {
+                          setSessionError('Falha ao iniciar sessão. Verifique o WAHA e tente novamente.');
+                        }
+                        fetchQR();
+                      })();
+                    }}
+                  >
+                    Tentar Novamente Conexão
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* Mensagens de status específicas removidas; a navegação ocorre automaticamente ao conectar */}
+      </div>
+    );
+  }
 
   // ===================== TELA 3: DASHBOARD =====================
   return (
@@ -1202,7 +1202,7 @@ export default function Index() {
 
             {/* Overlay para mobile */}
             {showAlerts && (
-              <div 
+              <div
                 className="fixed inset-0 bg-black/50 z-40 sm:hidden"
                 onClick={() => setShowAlerts(false)}
               />
@@ -1251,13 +1251,12 @@ export default function Index() {
                       {criticalAlerts.map((alert, index) => {
                         const isRead = readAlerts.includes(alert.id);
                         const Icon = alert.icon;
-                        
+
                         return (
                           <div
                             key={`${alert.id}-${alert.type}-${index}`}
-                            className={`p-3 sm:p-4 border-b border-gray-100 hover:bg-gray-50 active:bg-gray-100 transition cursor-pointer ${
-                              !isRead ? 'bg-blue-50/30' : ''
-                            }`}
+                            className={`p-3 sm:p-4 border-b border-gray-100 hover:bg-gray-50 active:bg-gray-100 transition cursor-pointer ${!isRead ? 'bg-blue-50/30' : ''
+                              }`}
                             onClick={() => {
                               markAlertAsRead(alert.id);
                               // Scroll para a conversa na tabela
@@ -1368,9 +1367,9 @@ export default function Index() {
               <FileText className="w-4 sm:w-5 md:w-6 h-4 sm:h-5 md:h-6 text-indigo-600" />
             </div>
           </div>
-            <p className="text-xs sm:text-sm text-gray-600 font-medium">Volume Total</p>
-            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mt-1">{overallMetrics.total}</h2>
-            <p className="text-xs text-gray-500 mt-1 sm:mt-2">Período selecionado</p>
+          <p className="text-xs sm:text-sm text-gray-600 font-medium">Volume Total</p>
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mt-1">{overallMetrics.total}</h2>
+          <p className="text-xs text-gray-500 mt-1 sm:mt-2">Período selecionado</p>
         </div>
         <div className="group bg-gradient-to-br from-white to-blue-50 p-3 sm:p-4 md:p-5 rounded-xl sm:rounded-2xl shadow-lg hover:shadow-xl border border-blue-100 flex flex-col justify-between h-full transition-all duration-300 hover:-translate-y-1">
           <div className="flex items-center justify-between mb-2 sm:mb-3">
@@ -1415,7 +1414,7 @@ export default function Index() {
         </div>
       </section>
 
-      
+
 
       {/* Card de Alertas Críticos - Apenas se houver 3+ alertas e não foi dispensado (acima dos filtros) */}
       {criticalAlerts.length >= 3 && !dismissedBanner && (
@@ -1679,79 +1678,78 @@ export default function Index() {
           <div className="inline-block min-w-full align-middle">
             <div className="overflow-hidden">
               <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Atendente</th>
-                <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase hidden md:table-cell">Empresa</th>
-                <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase hidden lg:table-cell">Data</th>
-                <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Score</th>
-                <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Sentimento</th>
-                <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase hidden sm:table-cell">Tipo (IA)</th>
-                <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase hidden xl:table-cell">Mensagem (Trecho)</th>
-                <th className="px-3 sm:px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Ações</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-100">
-              {conversationsLoading ? (
-                <tr>
-                  <td colSpan={8} className="px-3 sm:px-6 py-10 text-center text-gray-500 text-sm sm:text-base">
-                    Carregando conversas...
-                  </td>
-                </tr>
-              ) : conversations.length > 0 ? (
-                conversations.map(c => (
-                  <tr 
-                    key={c.id_atendimento} 
-                    id={`conversation-${c.id_atendimento}`}
-                    className="hover:bg-gray-50 transition duration-100"
-                  >
-                    <td className="px-3 sm:px-6 py-3 whitespace-nowrap text-xs sm:text-sm font-medium text-gray-900">{c.id_atendente}</td>
-                    <td className="px-3 sm:px-6 py-3 whitespace-nowrap text-xs sm:text-sm text-gray-700 hidden md:table-cell">{c.empresa || 'N/A'}</td>
-                    <td className="px-3 sm:px-6 py-3 whitespace-nowrap text-xs text-gray-500 hidden lg:table-cell">
-                      {c.data_hora ? new Date(c.data_hora).toLocaleDateString('pt-BR') : 'N/A'}
-                    </td>
-                    <td className="px-3 sm:px-6 py-3 whitespace-nowrap text-xs sm:text-sm font-bold text-gray-900">{Number(c.pontuacao_geral).toFixed(1)}</td>
-                    <td className="px-3 sm:px-6 py-3 whitespace-nowrap">
-                      <span
-                        className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                          c.sentimento_geral === 'Positivo'
-                            ? 'bg-green-100 text-green-800'
-                            : c.sentimento_geral === 'Negativo'
-                            ? 'bg-red-100 text-red-800'
-                            : 'bg-yellow-100 text-yellow-800'
-                        }`}
-                      >
-                        {c.sentimento_geral}
-                      </span>
-                    </td>
-                    <td className="px-3 sm:px-6 py-3 whitespace-nowrap text-xs sm:text-sm text-gray-600 hidden sm:table-cell">{c.tipo_atendimento}</td>
-                    <td className="px-3 sm:px-6 py-3 text-xs sm:text-sm text-gray-500 max-w-xs truncate hidden xl:table-cell">{c.mensagem_trecho}</td>
-                    <td className="px-3 sm:px-6 py-3 whitespace-nowrap text-center text-xs sm:text-sm font-medium">
-                      <div className="flex items-center justify-center gap-2 sm:gap-3">
-                        <button
-                          className="text-blue-600 hover:text-blue-800 text-xs sm:text-sm font-medium transition duration-150"
-                          onClick={() =>
-                            alert(
-                              `Detalhes da Conversa ${c.id_atendimento}:\nCliente: ${c.nome_cliente}\nTelefone: ${c.telefone_cliente || 'N/A'}\nPontuação: ${c.pontuacao_geral || 'N/A'}\nAtendente: ${c.id_atendente}\nMensagens: ${c.total_mensagens || 'N/A'}\n\nTrecho: "${c.mensagem_trecho || 'Sem mensagens'}"`
-                            )
-                          }
-                        >
-                          <span className="hidden sm:inline">Detalhes</span>
-                          <span className="sm:hidden">Ver</span>
-                        </button>
-                      </div>
-                    </td>
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Atendente</th>
+                    <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase hidden md:table-cell">Empresa</th>
+                    <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase hidden lg:table-cell">Data</th>
+                    <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Score</th>
+                    <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Sentimento</th>
+                    <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase hidden sm:table-cell">Tipo (IA)</th>
+                    <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase hidden xl:table-cell">Mensagem (Trecho)</th>
+                    <th className="px-3 sm:px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Ações</th>
                   </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={8} className="px-3 sm:px-6 py-10 text-center text-gray-500 text-sm sm:text-base">
-                    Nenhuma conversa encontrada no período ou com os filtros selecionados.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-100">
+                  {conversationsLoading ? (
+                    <tr>
+                      <td colSpan={8} className="px-3 sm:px-6 py-10 text-center text-gray-500 text-sm sm:text-base">
+                        Carregando conversas...
+                      </td>
+                    </tr>
+                  ) : conversations.length > 0 ? (
+                    conversations.map(c => (
+                      <tr
+                        key={c.id_atendimento}
+                        id={`conversation-${c.id_atendimento}`}
+                        className="hover:bg-gray-50 transition duration-100"
+                      >
+                        <td className="px-3 sm:px-6 py-3 whitespace-nowrap text-xs sm:text-sm font-medium text-gray-900">{c.id_atendente}</td>
+                        <td className="px-3 sm:px-6 py-3 whitespace-nowrap text-xs sm:text-sm text-gray-700 hidden md:table-cell">{c.empresa || 'N/A'}</td>
+                        <td className="px-3 sm:px-6 py-3 whitespace-nowrap text-xs text-gray-500 hidden lg:table-cell">
+                          {c.data_hora ? new Date(c.data_hora).toLocaleDateString('pt-BR') : 'N/A'}
+                        </td>
+                        <td className="px-3 sm:px-6 py-3 whitespace-nowrap text-xs sm:text-sm font-bold text-gray-900">{Number(c.pontuacao_geral).toFixed(1)}</td>
+                        <td className="px-3 sm:px-6 py-3 whitespace-nowrap">
+                          <span
+                            className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${c.sentimento_geral === 'Positivo'
+                                ? 'bg-green-100 text-green-800'
+                                : c.sentimento_geral === 'Negativo'
+                                  ? 'bg-red-100 text-red-800'
+                                  : 'bg-yellow-100 text-yellow-800'
+                              }`}
+                          >
+                            {c.sentimento_geral}
+                          </span>
+                        </td>
+                        <td className="px-3 sm:px-6 py-3 whitespace-nowrap text-xs sm:text-sm text-gray-600 hidden sm:table-cell">{c.tipo_atendimento}</td>
+                        <td className="px-3 sm:px-6 py-3 text-xs sm:text-sm text-gray-500 max-w-xs truncate hidden xl:table-cell">{c.mensagem_trecho}</td>
+                        <td className="px-3 sm:px-6 py-3 whitespace-nowrap text-center text-xs sm:text-sm font-medium">
+                          <div className="flex items-center justify-center gap-2 sm:gap-3">
+                            <button
+                              className="text-blue-600 hover:text-blue-800 text-xs sm:text-sm font-medium transition duration-150"
+                              onClick={() =>
+                                alert(
+                                  `Detalhes da Conversa ${c.id_atendimento}:\nCliente: ${c.nome_cliente}\nTelefone: ${c.telefone_cliente || 'N/A'}\nPontuação: ${c.pontuacao_geral || 'N/A'}\nAtendente: ${c.id_atendente}\nMensagens: ${c.total_mensagens || 'N/A'}\n\nTrecho: "${c.mensagem_trecho || 'Sem mensagens'}"`
+                                )
+                              }
+                            >
+                              <span className="hidden sm:inline">Detalhes</span>
+                              <span className="sm:hidden">Ver</span>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={8} className="px-3 sm:px-6 py-10 text-center text-gray-500 text-sm sm:text-base">
+                        Nenhuma conversa encontrada no período ou com os filtros selecionados.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
