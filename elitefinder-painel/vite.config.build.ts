@@ -13,9 +13,11 @@ export default defineConfig({
   },
   plugins: [react()],
   resolve: {
+    extensions: [".ts", ".tsx", ".js", ".jsx", ".json"],
     alias: {
       "@": path.resolve(__dirname, "./client"),
       "@shared": path.resolve(__dirname, "./shared"),
     },
   },
 });
+
