@@ -1,0 +1,11 @@
+[build]
+builder = "dockerfile"
+dockerfilePath = "server/Dockerfile"
+
+[deploy]
+startCommand = "node dist/server/node-build.mjs"
+healthcheckPath = "/api/ping"
+healthcheckTimeout = 300
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 3
+numReplicas = 1
