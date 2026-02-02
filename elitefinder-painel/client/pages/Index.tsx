@@ -3,8 +3,8 @@ import { Link, useLocation } from 'react-router-dom';
 import { Search, Gauge, TrendingUp, TrendingDown, Users, CheckCircle, XCircle, Calendar, FileText, Bell, AlertTriangle, X, Clock, BarChart2, Eye } from 'lucide-react';
 import Login from './Login';
 import logo from '../assets/12597368.png';
-import { apiFetchMetricsOverall, apiFetchMetricsExtended, OverallAnalyticsResponse, ExtendedAnalyticsResponse, apiExportAnalyticsCsv, apiExportConversationsCsv as apiExportConversationsFromBackend, apiExportSalesReportCsv } from '@/lib/analyticsApi';
-import { apiExportConversationsCsv, apiFetchAuditConversations, AuditConversation } from '@/lib/conversationsApi';
+import { apiFetchMetricsOverall, apiFetchMetricsExtended, OverallAnalyticsResponse, ExtendedAnalyticsResponse, apiExportAnalyticsCsv, apiExportConversationsCsv as apiExportConversationsFromBackend, apiExportSalesReportCsv } from '../lib/analyticsApi';
+import { apiExportConversationsCsv, apiFetchAuditConversations, AuditConversation } from '../lib/conversationsApi';
 
 // Dados simulados caso a IA não responda
 const mockAnalyticsData = [
@@ -1713,10 +1713,10 @@ export default function Index() {
                         <td className="px-3 sm:px-6 py-3 whitespace-nowrap">
                           <span
                             className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${c.sentimento_geral === 'Positivo'
-                                ? 'bg-green-100 text-green-800'
-                                : c.sentimento_geral === 'Negativo'
-                                  ? 'bg-red-100 text-red-800'
-                                  : 'bg-yellow-100 text-yellow-800'
+                              ? 'bg-green-100 text-green-800'
+                              : c.sentimento_geral === 'Negativo'
+                                ? 'bg-red-100 text-red-800'
+                                : 'bg-yellow-100 text-yellow-800'
                               }`}
                           >
                             {c.sentimento_geral}

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Sparkles, RefreshCw, Eye, Calendar, User, MessageSquare, TrendingUp, Search, Filter } from 'lucide-react';
-import { apiFetchAtendimentos, apiTriggerManualAnalysis } from '@/lib/analyticsApi';
+import { apiFetchAtendimentos, apiTriggerManualAnalysis } from '../lib/analyticsApi';
 
 interface Atendimento {
   id_atendimento: number;
@@ -169,9 +169,9 @@ export default function Atendimentos() {
                 <p className="text-2xl font-bold text-purple-600">
                   {atendimentos.filter(a => a.pontuacao_geral).length > 0
                     ? (atendimentos
-                        .filter(a => a.pontuacao_geral)
-                        .reduce((sum, a) => sum + (a.pontuacao_geral || 0), 0) /
-                        atendimentos.filter(a => a.pontuacao_geral).length).toFixed(1)
+                      .filter(a => a.pontuacao_geral)
+                      .reduce((sum, a) => sum + (a.pontuacao_geral || 0), 0) /
+                      atendimentos.filter(a => a.pontuacao_geral).length).toFixed(1)
                     : 'N/A'}
                 </p>
               </div>
@@ -282,11 +282,10 @@ export default function Atendimentos() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span
-                          className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                            atend.status_atendimento === 'Fechado'
+                          className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${atend.status_atendimento === 'Fechado'
                               ? 'bg-gray-100 text-gray-800'
                               : 'bg-green-100 text-green-800'
-                          }`}
+                            }`}
                         >
                           {atend.status_atendimento}
                         </span>
@@ -321,9 +320,8 @@ export default function Atendimentos() {
                             <button
                               onClick={() => handleAnalyze(atend.id_atendimento)}
                               disabled={analyzingId === atend.id_atendimento}
-                              className={`text-purple-600 hover:text-purple-800 transition ${
-                                analyzingId === atend.id_atendimento ? 'opacity-50 cursor-not-allowed' : ''
-                              }`}
+                              className={`text-purple-600 hover:text-purple-800 transition ${analyzingId === atend.id_atendimento ? 'opacity-50 cursor-not-allowed' : ''
+                                }`}
                               title="Analisar com IA"
                             >
                               {analyzingId === atend.id_atendimento ? (
@@ -338,9 +336,8 @@ export default function Atendimentos() {
                             <button
                               onClick={() => handleAnalyze(atend.id_atendimento)}
                               disabled={analyzingId === atend.id_atendimento}
-                              className={`text-green-600 hover:text-green-800 transition ${
-                                analyzingId === atend.id_atendimento ? 'opacity-50 cursor-not-allowed' : ''
-                              }`}
+                              className={`text-green-600 hover:text-green-800 transition ${analyzingId === atend.id_atendimento ? 'opacity-50 cursor-not-allowed' : ''
+                                }`}
                               title="Re-analisar"
                             >
                               {analyzingId === atend.id_atendimento ? (
