@@ -1,0 +1,499 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 2 * * *"
+            }
+          ]
+        }
+      },
+      "id": "bc4cfa44-5c13-4979-a82e-05ef4935f0b9",
+      "name": "Cron Schedule - Diário 02:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -3472,
+        -1456
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": []
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "dbf0b681-0c90-45b8-94fd-ab8bd3c6a326",
+      "name": "Workflow Configuration",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -3248,
+        -1456
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT \n  a.id_atendimento,\n  a.nome_cliente,\n  a.data_hora_inicio,\n  a.data_hora_fim,\n  a.id_atendente,\n  STRING_AGG(DISTINCT m.conteudo_texto, ' | ') as conteudo_conversa\nFROM atendimento a\nLEFT JOIN mensagem m ON a.id_atendimento = m.id_atendimento\nLEFT JOIN analisequalidade aq ON a.id_atendimento = aq.id_atendimento\nWHERE \n  a.status_atendimento = 'Fechado'\n  AND aq.id_analise IS NULL\nGROUP BY a.id_atendimento, a.nome_cliente, a.data_hora_inicio, a.data_hora_fim, a.id_atendente\nLIMIT 2",
+        "options": {}
+      },
+      "id": "6b21107b-6633-427c-87b9-35d741fc0d8d",
+      "name": "Buscar Conversas Não Analisadas",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -3024,
+        -1456
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "9eNHYoZipXCw6w0w",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Pega TODOS os items, não só o primeiro\nconst items = $input.all().map(item => item.json);\n\nconsole.log('Total de items:', items.length);\n\nif (items.length === 0) {\n  return [];\n}\n\nreturn items.map(item => ({ json: item }));"
+      },
+      "id": "67ac39f6-a28e-4119-bd7c-c0ce6d20fe0d",
+      "name": "Split Conversas",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2800,
+        -1456
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Você é um Analista de Qualidade de Atendimento. Avalie a conversa do WhatsApp abaixo:\n\n**Cliente**: {{ $json.nome_cliente }}\n**Data**: {{ $json.data_hora_inicio }}\n\n**CONVERSA:**\n{{ $json.conteudo_conversa }}\n\n---\n\nRETORNE EXATAMENTE ESTE JSON (sem comentários, sem markdown):\n{\n  \"saudacao_inicial\": \"descrição breve da saudação\",\n  \"uso_nome_cliente\": \"sim ou nao\",\n  \"rapport_empatia\": \"Alto, Médio ou Baixo\",\n  \"uso_emojis\": \"sim ou nao\",\n  \"tom_conversa\": \"descrição breve\",\n  \"erros_gramaticais\": \"lista ou Nenhum\",\n  \"resolutividade\": \"sim, nao ou parcial\",\n  \"tempo_resposta\": \"Rápido, Lento ou Irregular\",\n  \"indicios_venda\": \"sim ou nao\",\n  \"sentimento_geral\": \"Positivo, Neutro ou Negativo\",\n  \"tipo_atendimento\": \"Dúvida, Reclamação, Suporte Técnico ou Vendas\",\n  \"canal_origem_conversa\": \"Instagram, Facebook, Google, Site, Indicação, WhatsApp Direto ou Não identificado\",\n  \"produto_interesse\": \"Nome do produto mencionado ou Não especificado\",\n  \"pontuacao_geral\": 8,\n  \"observacoes\": \"3 ou mais frases com pontos fortes e fracos\"\n}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "Você é um Analista de Qualidade de Atendimento. Avalie a conversa do WhatsApp fornecida e retorne uma análise estruturada em JSON."
+        }
+      },
+      "id": "331d3634-00b8-4566-8dc4-b93972ebed9c",
+      "name": "IA Analisar Conversa",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -2576,
+        -1456
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "builtInTools": {},
+        "options": {
+          "maxTokens": 3000
+        }
+      },
+      "id": "e8657da8-2c75-4fbc-a0be-7fbb6689efd8",
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        -2592,
+        -1232
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "0hIUc7YBsqW7aB2e",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n\t\"type\": \"object\",\n\t\"properties\": {\n\t\t\"saudacao_inicial\": {\n\t\t\t\"type\": \"string\",\n\t\t\t\"description\": \"Descrição breve da saudação inicial\"\n\t\t},\n\t\t\"uso_nome_cliente\": {\n\t\t\t\"type\": \"string\",\n\t\t\t\"description\": \"sim ou nao\"\n\t\t},\n\t\t\"rapport_empatia\": {\n\t\t\t\"type\": \"string\",\n\t\t\t\"description\": \"Alto, Médio ou Baixo\"\n\t\t},\n\t\t\"uso_emojis\": {\n\t\t\t\"type\": \"string\",\n\t\t\t\"description\": \"sim ou nao\"\n\t\t},\n\t\t\"tom_conversa\": {\n\t\t\t\"type\": \"string\",\n\t\t\t\"description\": \"Descrição do tom da conversa\"\n\t\t},\n\t\t\"erros_gramaticais\": {\n\t\t\t\"type\": \"string\",\n\t\t\t\"description\": \"Lista de erros ou Nenhum\"\n\t\t},\n\t\t\"resolutividade\": {\n\t\t\t\"type\": \"string\",\n\t\t\t\"description\": \"sim, nao ou parcial\"\n\t\t},\n\t\t\"tempo_resposta\": {\n\t\t\t\"type\": \"string\",\n\t\t\t\"description\": \"Rápido, Lento ou Irregular\"\n\t\t},\n\t\t\"indicios_venda\": {\n\t\t\t\"type\": \"string\",\n\t\t\t\"description\": \"sim ou nao\"\n\t\t},\n\t\t\"sentimento_geral\": {\n\t\t\t\"type\": \"string\",\n\t\t\t\"description\": \"Positivo, Neutro ou Negativo\"\n\t\t},\n\t\t\"tipo_atendimento\": {\n\t\t\t\"type\": \"string\",\n\t\t\t\"description\": \"Dúvida, Reclamação, Suporte Técnico ou Vendas\"\n\t\t},\n\t\t\"canal_origem_conversa\": {\n\t\t\t\"type\": \"string\",\n\t\t\t\"description\": \"Canal de origem: Instagram, Facebook, Google, Site, Indicação, WhatsApp Direto ou Não identificado\"\n\t\t},\n\t\t\"produto_interesse\": {\n\t\t\t\"type\": \"string\",\n\t\t\t\"description\": \"Nome do produto mencionado ou Não especificado\"\n\t\t},\n\t\t\"pontuacao_geral\": {\n\t\t\t\"type\": \"number\",\n\t\t\t\"description\": \"Pontuação de 0 a 10\"\n\t\t},\n\t\t\"observacoes\": {\n\t\t\t\"type\": \"string\",\n\t\t\t\"description\": \"Observações com 3 ou mais frases\"\n\t\t}\n\t}\n}"
+      },
+      "id": "e98f4065-1a46-497a-8993-f967d955abdd",
+      "name": "Structured Output Parser",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        -2416,
+        -1232
+      ]
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "mode": "name",
+          "value": "analisequalidade"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id_atendimento": "={{ $json.id_atendimento }}",
+            "saudacao_inicial": "={{ $json.saudacao_inicial }}",
+            "uso_nome_cliente": "={{ $json.uso_nome_cliente }}",
+            "rapport_empatia": "={{ $json.rapport_empatia }}",
+            "uso_emojis": "={{ $json.uso_emojis }}",
+            "tom_conversa": "={{ $json.tom_conversa }}",
+            "erros_gramaticais": "={{ $json.erros_gramaticais }}",
+            "resolutividade": "={{ $json.resolutividade }}",
+            "tempo_resposta": "={{ $json.tempo_resposta }}",
+            "indicios_venda": "={{ $json.indicios_venda }}",
+            "sentimento_geral": "={{ $json.sentimento_geral }}",
+            "tipo_atendimento": "={{ $json.tipo_atendimento }}",
+            "pontuacao_geral": "={{ $json.pontuacao_geral }}",
+            "observacoes": "={{ $json.observacoes }}",
+            "data_analise": "={{ $now }}"
+          },
+          "matchingColumns": ["id_atendimento"],
+          "schema": [
+            {
+              "id": "id_analise",
+              "displayName": "id_analise",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "id_atendimento",
+              "displayName": "id_atendimento",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "saudacao_inicial",
+              "displayName": "saudacao_inicial",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "uso_nome_cliente",
+              "displayName": "uso_nome_cliente",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "rapport_empatia",
+              "displayName": "rapport_empatia",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "uso_emojis",
+              "displayName": "uso_emojis",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "tom_conversa",
+              "displayName": "tom_conversa",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "erros_gramaticais",
+              "displayName": "erros_gramaticais",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "resolutividade",
+              "displayName": "resolutividade",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "tempo_resposta",
+              "displayName": "tempo_resposta",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "indicios_venda",
+              "displayName": "indicios_venda",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "sentimento_geral",
+              "displayName": "sentimento_geral",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "tipo_atendimento",
+              "displayName": "tipo_atendimento",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "pontuacao_geral",
+              "displayName": "pontuacao_geral",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "observacoes",
+              "displayName": "observacoes",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "data_analise",
+              "displayName": "data_analise",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "ef49e812-a587-470d-845c-5b3ab633c548",
+      "name": "Salvar Análise",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -2000,
+        -1456
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "9eNHYoZipXCw6w0w",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "id-1",
+              "name": "status",
+              "value": "success",
+              "type": "string"
+            },
+            {
+              "id": "id-2",
+              "name": "message",
+              "value": "Análises inseridas",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "1c77b66f-e18c-43f3-aed9-b9953a60ea78",
+      "name": "Sucesso",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1776,
+        -1456
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Ajuste para o modo \"Run Once for Each Item\"\nconst iaOutput = $input.item.json;\nconst idAtendimento = $('Split Conversas').item.json.id_atendimento;\n\nconsole.log('IA Output Raw:', typeof iaOutput);\n\ntry {\n  let analiseRaw = iaOutput.output || iaOutput;\n  let analise;\n\n  if (typeof analiseRaw === 'string') {\n    const cleanJson = analiseRaw.replace(/```json|```/g, '').trim();\n    analise = JSON.parse(cleanJson);\n  } else {\n    analise = analiseRaw;\n  }\n\n  // Nota: Não retornamos um array [{json: ...}] aqui se estiver no modo \"Each Item\"\n  // Retornamos apenas o objeto direto. O n8n cuida do array.\n  return {\n      id_atendimento: idAtendimento,\n      saudacao_inicial: analise?.saudacao_inicial || 'Não identificado',\n      uso_nome_cliente: analise?.uso_nome_cliente || 'Não',\n      rapport_empatia: analise?.rapport_empatia || 'Baixo',\n      uso_emojis: analise?.uso_emojis || 'Não',\n      tom_conversa: analise?.tom_conversa || 'Neutro',\n      erros_gramaticais: analise?.erros_gramaticais || 'Não detectado',\n      resolutividade: analise?.resolutividade || 'Não',\n      tempo_resposta: analise?.tempo_resposta || 'Médio',\n      indicios_venda: analise?.indicios_venda || 'Não',\n      sentimento_geral: analise?.sentimento_geral || 'Neutro',\n      tipo_atendimento: analise?.tipo_atendimento || 'Geral',\n      canal_origem_conversa: analise?.canal_origem_conversa || 'Não identificado',\n      produto_interesse: analise?.produto_interesse || 'Não especificado',\n      pontuacao_geral: Number(analise?.pontuacao_geral) || 0,\n      observacoes: analise?.observacoes || ''\n  };\n  \n} catch (error) {\n  console.error('Erro:', error.message);\n  return {\n      id_atendimento: idAtendimento,\n      saudacao_inicial: 'ERRO_PARSE',\n      // ... preencha o restante dos campos de erro conforme necessário\n      observacoes: `Erro: ${error.message}`\n  };\n}"
+      },
+      "id": "1a1a5969-ff43-4fd0-a6c7-f76d61f86be1",
+      "name": "Processar Resposta IA",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2224,
+        -1456
+      ]
+    },
+    {
+      "parameters": {
+        "content": "# Job",
+        "height": 1200,
+        "width": 2310,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -3696,
+        -1952
+      ],
+      "typeVersion": 1,
+      "id": "89e1dd95-c2e6-45a5-869c-da957823af1c",
+      "name": "Sticky Note2"
+    }
+  ],
+  "connections": {
+    "Cron Schedule - Diário 02:00": {
+      "main": [
+        [
+          {
+            "node": "Workflow Configuration",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Workflow Configuration": {
+      "main": [
+        [
+          {
+            "node": "Buscar Conversas Não Analisadas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buscar Conversas Não Analisadas": {
+      "main": [
+        [
+          {
+            "node": "Split Conversas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Conversas": {
+      "main": [
+        [
+          {
+            "node": "IA Analisar Conversa",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IA Analisar Conversa": {
+      "main": [
+        [
+          {
+            "node": "Processar Resposta IA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "IA Analisar Conversa",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "IA Analisar Conversa",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Salvar Análise": {
+      "main": [
+        [
+          {
+            "node": "Sucesso",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Processar Resposta IA": {
+      "main": [
+        [
+          {
+            "node": "Salvar Análise",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "c00682a2fc579bff9615aa9be956cba66c69c42ed5658287932fc14102e898dd"
+  }
+}

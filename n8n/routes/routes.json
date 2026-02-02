@@ -1,0 +1,1062 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "path": "/api/session/status",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "c3ce8ba1-d84c-423d-9abc-0019e18ae080",
+      "name": "GET /api/session/status",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -2032,
+        1584
+      ],
+      "webhookId": "1423ce48-4e78-4eeb-ac99-738f0f7383aa"
+    },
+    {
+      "parameters": {
+        "url": "https://marketsharedigital.com.br/api/sessions/default",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "qR7sP!xZ2tYh*VbK6mN9eWdJ4rFaGcC8lQzE3yUo"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "eb7eaa4e-503a-442d-98df-0f164381547d",
+      "name": "Call WAHA API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -1808,
+        1584
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "id-1",
+              "name": "sessionName",
+              "value": "={{ $json.name }}",
+              "type": "string"
+            },
+            {
+              "id": "id-2",
+              "name": "status",
+              "value": "={{ $json.status }}",
+              "type": "string"
+            },
+            {
+              "id": "id-3",
+              "name": "qrCode",
+              "value": "={{ $json.qrCode || null }}",
+              "type": "string"
+            },
+            {
+              "id": "id-4",
+              "name": "account",
+              "value": "={{ JSON.stringify({ \"id\": $json.me?.id || null, \"pushName\": $json.me?.pushName || null }) }}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "ae89eead-570f-42dc-833d-8d2b905606fd",
+      "name": "Format Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1584,
+        1584
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Access-Control-Allow-Methods",
+                "value": "GET, OPTIONS"
+              },
+              {
+                "name": "Access-Control-Allow-Headers",
+                "value": "Content-Type, Authorization"
+              }
+            ]
+          }
+        }
+      },
+      "id": "42020a3e-c15f-4434-9122-3e10be294250",
+      "name": "Return to Frontend",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        -1360,
+        1584
+      ]
+    },
+    {
+      "parameters": {
+        "path": "/api/analytics/metrics",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "0aaf6499-02ee-42a1-ac77-e48eea4e3971",
+      "name": "GET /api/analytics/metrics2",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -3840,
+        1648
+      ],
+      "webhookId": "51a37a38-b54b-4b76-8278-5d1ae8cf29d6"
+    },
+    {
+      "parameters": {
+        "jsCode": "const query = $input.first().json.query || {};\nconst timeRange = query.timeRange || 'MES_ATUAL';\nconst startDate = query.startDate;\nconst endDate = query.endDate;\n\nconst dateExpr = \"COALESCE(a.data_hora_fim, a.data_hora_inicio)\";\nlet dateFilter = '';\n\nswitch(timeRange) {\n  case 'HOJE':\n    dateFilter = `DATE(${dateExpr}) = CURRENT_DATE`;\n    break;\n  case 'MES_ATUAL':\n    dateFilter = `EXTRACT(MONTH FROM ${dateExpr}) = EXTRACT(MONTH FROM CURRENT_DATE) AND EXTRACT(YEAR FROM ${dateExpr}) = EXTRACT(YEAR FROM CURRENT_DATE)`;\n    break;\n  case 'ULTIMO_MES':\n    dateFilter = `${dateExpr} >= CURRENT_DATE - INTERVAL '30 days'`;\n    break;\n  case 'ULTIMOS_6_MESES':\n    dateFilter = `${dateExpr} >= CURRENT_DATE - INTERVAL '6 months'`;\n    break;\n  case 'PERSONALIZADO':\n    if (startDate && endDate) {\n      dateFilter = `${dateExpr} BETWEEN '${startDate}' AND '${endDate}'`;\n    } else {\n      dateFilter = `EXTRACT(MONTH FROM ${dateExpr}) = EXTRACT(MONTH FROM CURRENT_DATE) AND EXTRACT(YEAR FROM ${dateExpr}) = EXTRACT(YEAR FROM CURRENT_DATE)`;\n    }\n    break;\n  default:\n    dateFilter = `EXTRACT(MONTH FROM ${dateExpr}) = EXTRACT(MONTH FROM CURRENT_DATE) AND EXTRACT(YEAR FROM ${dateExpr}) = EXTRACT(YEAR FROM CURRENT_DATE)`;\n}\n\nreturn [{\n  json: {\n    dateFilter: dateFilter,\n    timeRange: timeRange\n  }\n}];"
+      },
+      "id": "873c3b03-09f0-4733-ab31-9f2fca445844",
+      "name": "Build Date Filter2",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -3616,
+        1648
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT \n  COUNT(*) as total, \n  AVG(aq.pontuacao_geral) as avgScore, \n  ROUND(COUNT(CASE WHEN aq.sentimento_geral = 'Positivo' THEN 1 END) * 100.0 / NULLIF(COUNT(*), 0), 1) as positivePercent, \n  ROUND(COUNT(CASE WHEN aq.sentimento_geral = 'Negativo' THEN 1 END) * 100.0 / NULLIF(COUNT(*), 0), 1) as negativePercent \nFROM atendimento a \nLEFT JOIN analisequalidade aq ON a.id_atendimento = aq.id_atendimento \nWHERE a.status_atendimento = 'Fechado' \n  AND {{ $('Build Date Filter2').item.json.dateFilter }}",
+        "options": {}
+      },
+      "id": "0cb92fd8-174e-4f28-bf79-8e51d90101e1",
+      "name": "Query Overall Metrics1",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -3392,
+        1360
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "9eNHYoZipXCw6w0w",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT a.id_atendente, AVG(aq.pontuacao_geral) as avg_score FROM atendimento a LEFT JOIN analisequalidade aq ON a.id_atendimento = aq.id_atendimento WHERE a.status_atendimento = 'Fechado' GROUP BY a.id_atendente ORDER BY avg_score DESC LIMIT 1",
+        "options": {}
+      },
+      "id": "0d808b92-8ef3-4d51-ada2-7b6481ddce83",
+      "name": "Query Top Attendant2",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -3392,
+        1552
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "9eNHYoZipXCw6w0w",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT AVG(EXTRACT(EPOCH FROM (a.data_hora_fim - a.data_hora_inicio)) / 60) as avgHandlingMinutes, COUNT(CASE WHEN aq.tipo_atendimento = 'Dúvida' THEN 1 END) as duvidas, COUNT(CASE WHEN aq.tipo_atendimento = 'Reclamação' THEN 1 END) as reclamacoes, COUNT(CASE WHEN aq.tipo_atendimento = 'Suporte Técnico' THEN 1 END) as suporte, COUNT(CASE WHEN aq.tipo_atendimento = 'Vendas' THEN 1 END) as vendas FROM atendimento a LEFT JOIN analisequalidade aq ON a.id_atendimento = aq.id_atendimento WHERE a.status_atendimento = 'Fechado'",
+        "options": {}
+      },
+      "id": "fd9566e6-213b-49ce-8ce3-541b589bf759",
+      "name": "Query Service Metrics2",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -3392,
+        1744
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "9eNHYoZipXCw6w0w",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT aq.tipo_atendimento, AVG(aq.pontuacao_geral) as avg_score FROM analisequalidade aq JOIN atendimento a ON aq.id_atendimento = a.id_atendimento WHERE a.status_atendimento = 'Fechado' GROUP BY aq.tipo_atendimento",
+        "options": {}
+      },
+      "id": "1c089313-e472-48ba-99da-c42540035d40",
+      "name": "Query Type Averages2",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -3392,
+        1936
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "9eNHYoZipXCw6w0w",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "function num(v) {\n  const n = parseFloat(v);\n  return Number.isFinite(n) ? n : 0;\n}\nfunction int(v) {\n  const n = parseInt(v);\n  return Number.isFinite(n) ? n : 0;\n}\n\nlet overall = {};\nlet top = {};\nlet service = {};\nlet typeItems = [];\n\ntry { overall = $('Query Overall Metrics1').first().json || {}; } catch (e) { overall = {}; }\ntry { top = $('Query Top Attendant2').first().json || {}; } catch (e) { top = {}; }\ntry { service = $('Query Service Metrics2').first().json || {}; } catch (e) { service = {}; }\ntry { typeItems = $('Query Type Averages2').all() || []; } catch (e) { typeItems = []; }\n\nconst typeScoreAverages = {};\nfor (const item of typeItems) {\n  const row = item.json || {};\n  if (row.tipo_atendimento) {\n    typeScoreAverages[row.tipo_atendimento] = num(row.avg_score).toFixed(1);\n  }\n}\n\nconst result = {\n  overallMetrics: {\n    total: int(overall.total),\n    avgScore: num(overall.avgscore).toFixed(1),\n    positivePercent: num(overall.positivepercent).toFixed(1),\n    negativePercent: num(overall.negativepercent).toFixed(1),\n    topAttendant: top.id_atendente\n      ? `${top.id_atendente} ${num(top.avg_score).toFixed(1)}`\n      : null\n  },\n  serviceMetrics: {\n    avgHandlingMinutes: num(service.avghandlingminutes).toFixed(1),\n    abandonmentPercent: 3.2,\n    typeDistribution: {\n      'Dúvida': int(service.duvidas),\n      'Reclamação': int(service.reclamacoes),\n      'Suporte Técnico': int(service.suporte),\n      'Vendas': int(service.vendas)\n    }\n  },\n  typeScoreAverages\n};\n\nreturn [{ json: result }];"
+      },
+      "id": "d393eb9b-6845-4c0b-a790-ac756a205f6d",
+      "name": "Format Final Response2",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2928,
+        1648
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Access-Control-Allow-Methods",
+                "value": "GET, OPTIONS"
+              },
+              {
+                "name": "Access-Control-Allow-Headers",
+                "value": "Content-Type, Authorization"
+              }
+            ]
+          }
+        }
+      },
+      "id": "09dba199-e13e-4b05-9e05-e4a2a3fe6a20",
+      "name": "Return Analytics2",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        -2736,
+        1648
+      ]
+    },
+    {
+      "parameters": {
+        "numberInputs": 4
+      },
+      "id": "5617f681-cd74-42cf-9eee-1133cdabbf3f",
+      "name": "Merge1",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        -3104,
+        1616
+      ]
+    },
+    {
+      "parameters": {
+        "path": "api/conversations/export",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "c7b4e3ac-82e7-45de-9a86-1b159f7e5992",
+      "name": "Webhook CSV Export",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -816,
+        1552
+      ],
+      "webhookId": "e552637c-8d66-4642-b6d7-5dfcce544c53"
+    },
+    {
+      "parameters": {
+        "jsCode": "const query = $input.first().json.query || {};\nconst timeRange = query.timeRange || 'MES_ATUAL';\nconst sentiment = query.sentiment || 'Todos';\nconst startDate = query.startDate;\nconst endDate = query.endDate;\nconst idAtendimento = query.idAtendimento; \nconst cliente = query.cliente;             \n\nconst dateExpr = \"COALESCE(a.data_hora_fim, a.data_hora_inicio)\";\nlet dateFilter = '';\n\nswitch (timeRange) {\n  case 'HOJE':\n    dateFilter = `DATE(${dateExpr}) = CURRENT_DATE`;\n    break;\n  case 'MES_ATUAL':\n    dateFilter = `EXTRACT(MONTH FROM ${dateExpr}) = EXTRACT(MONTH FROM CURRENT_DATE) AND EXTRACT(YEAR FROM ${dateExpr}) = EXTRACT(YEAR FROM CURRENT_DATE)`;\n    break;\n  case 'ULTIMO_MES':\n    dateFilter = `${dateExpr} >= CURRENT_DATE - INTERVAL '30 days'`;\n    break;\n  case 'ULTIMOS_6_MESES':\n    dateFilter = `${dateExpr} >= CURRENT_DATE - INTERVAL '6 months'`;\n    break;\n  case 'PERSONALIZADO':\n    dateFilter = (startDate && endDate)\n      ? `${dateExpr} BETWEEN '${startDate}' AND '${endDate}'`\n      : `EXTRACT(MONTH FROM ${dateExpr}) = EXTRACT(MONTH FROM CURRENT_DATE) AND EXTRACT(YEAR FROM ${dateExpr}) = EXTRACT(YEAR FROM CURRENT_DATE)`;\n    break;\n  default:\n    dateFilter = `EXTRACT(MONTH FROM ${dateExpr}) = EXTRACT(MONTH FROM CURRENT_DATE) AND EXTRACT(YEAR FROM ${dateExpr}) = EXTRACT(YEAR FROM CURRENT_DATE)`;\n}\n\nreturn [{ json: { dateFilter, timeRange, sentiment, idAtendimento, cliente } }];"
+      },
+      "id": "9279f42d-706f-43b7-a3aa-fb6d32e494fb",
+      "name": "Build Date Filter",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -560,
+        1552
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const rows = $input.all().map(i => i.json);\nif (!rows.length) {\n  return [{ json: { csv: 'ID,Atendente,Cliente,Data/Hora,Score,Sentimento,Tipo,Mensagem\\n' } }];\n}\n\nconst headers = Object.keys(rows[0]);\nconst escape = (v) => {\n  if (v == null) return '';\n  const s = String(v);\n  const needsQuotes = /[\",\\n]/.test(s);\n  return needsQuotes ? '\"' + s.replace(/\"/g, '\"\"') + '\"' : s;\n};\n\nconst csv = [\n  headers.join(','),\n  ...rows.map(r => headers.map(h => escape(r[h])).join(','))\n].join('\\n');\n\nreturn [{ json: { csv } }];"
+      },
+      "id": "ad1470ba-a347-4ede-a4a7-a0553615f567",
+      "name": "Format CSV",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -64,
+        1552
+      ]
+    },
+    {
+      "parameters": {
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "text/csv; charset=utf-8"
+              },
+              {
+                "name": "Content-Disposition",
+                "value": "attachment; filename=\"conversas.csv\""
+              },
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "234789f4-2681-4f96-b946-d160aebefeea",
+      "name": "Return CSV",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        176,
+        1552
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT\n  a.nome_cliente AS \"Nome\",\n  a.telefone_cliente AS \"Telefone\",\n  a.canal_origem AS \"Canal\",\n  '' AS \"Situação do CPF\",\n  aq.tipo_atendimento AS \"Serviço\",\n  a.id_atendimento AS \"Ticket Venda\",\n  CASE WHEN aq.indicios_venda = 'SIM' THEN 'TRUE' ELSE 'FALSE' END AS \"Venda (S/N)\",\n  CASE \n    WHEN aq.indicios_venda = 'SIM' THEN 'Fechou'\n    ELSE 'Cliente não fechou'\n  END AS \"Motivo\",\n  TO_CHAR(a.data_hora_inicio, 'DD/MM/YYYY') AS \"Data\",\n  TO_CHAR(a.data_hora_inicio, 'HH24:MI') AS \"Hora Chamado\",\n  TO_CHAR(COALESCE(a.data_hora_fim, a.data_hora_inicio), 'HH24:MI') AS \"Hora Resposta\",\n  TO_CHAR((COALESCE(a.data_hora_fim, a.data_hora_inicio) - a.data_hora_inicio), 'HH24:MI') AS \"Tempo de Resposta\",\n  CASE WHEN aq.saudacao_inicial = 'SIM' THEN 'TRUE' ELSE 'FALSE' END AS \"IA: Saudação Inicial (S/N)\",\n  CASE WHEN aq.uso_nome_cliente = 'SIM' THEN 'TRUE' ELSE 'FALSE' END AS \"IA: Uso do nome (S/N)\",\n  CASE WHEN aq.rapport_empatia IN ('ALTA', 'MEDIA') THEN 'TRUE' ELSE 'FALSE' END AS \"IA: Rapport\",\n  CASE WHEN aq.rapport_empatia IN ('ALTA', 'MEDIA') THEN 'TRUE' ELSE 'FALSE' END AS \"IA: Empatia\",\n  CASE WHEN aq.uso_emojis IN ('ADEQUADO', 'SIM') THEN 'FALSE' ELSE 'TRUE' END AS \"IA: Uso de Emojis\",\n  aq.tom_conversa AS \"IA: Tom da conversa\",\n  CASE WHEN aq.erros_gramaticais = 'NENHUM' THEN 'FALSE' ELSE 'TRUE' END AS \"IA: Erros Gramaticais\",\n  CASE WHEN aq.resolutividade IN ('ALTA', 'MEDIA') THEN 'TRUE' ELSE 'FALSE' END AS \"IA: Resolutividade\",\n  CASE WHEN aq.indicios_venda = 'SIM' THEN 'TRUE' ELSE 'FALSE' END AS \"IA: Venda concluída (S/N)\",\n  COALESCE(aq.observacoes, '') AS \"IA: Conteúdo da conversa\",\n  CASE \n    WHEN aq.pontuacao_geral >= 80 THEN 'Ótima'\n    WHEN aq.pontuacao_geral >= 60 THEN 'Boa'\n    WHEN aq.pontuacao_geral >= 40 THEN 'Regular'\n    ELSE 'Ruim'\n  END AS \"IA: Análise de Qualidade do Atendimento\",\n  aq.sentimento_geral AS \"IA: Análise de Sentimento\",\n  CONCAT('CONV', a.id_atendimento) AS \"IA: ID da conversa\",\n  CAST(a.id_atendente AS VARCHAR) AS \"IA: Nome do vendedor/Atendente\"\nFROM atendimento a\nJOIN analisequalidade aq ON a.id_atendimento = aq.id_atendimento\nWHERE\n  {{ $json.dateFilter }}\n  AND (\n    '{{ $json.sentiment }}' = 'Todos'\n    OR aq.sentimento_geral = '{{ $json.sentiment }}'\n  )\n  {{ $json.idAtendimento ? `AND a.id_atendimento = ${$json.idAtendimento}` : '' }}\n  {{ $json.cliente ? `AND a.nome_cliente ILIKE '%${$json.cliente}%'` : '' }}\nORDER BY a.data_hora_inicio DESC;",
+        "options": {}
+      },
+      "id": "0b3f6008-15b6-481b-92e7-c789e5b6a9e3",
+      "name": "Query CSV Rows1",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -304,
+        1552
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "9eNHYoZipXCw6w0w",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "path": "/api/analytics/metrics-extended",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "f674613d-9daa-43c0-996c-c4e9c3e3c253",
+      "name": "GET /api/analytics/metrics-extended",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -2048,
+        1888
+      ],
+      "webhookId": "dd9203a9-7a0f-494e-8311-329f33fe1e2d"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "WITH bounds AS (\n  SELECT\n    CASE '{{ $json.query.timeRange || \"MES_ATUAL\" }}'\n      WHEN 'MES_ATUAL' THEN date_trunc('month', now())\n      WHEN 'MES_ANTERIOR' THEN date_trunc('month', now() - interval '1 month')\n      WHEN 'ULTIMOS_7_DIAS' THEN now() - interval '7 days'\n      WHEN 'ULTIMOS_6_MESES' THEN date_trunc('month', now() - interval '5 months')\n      ELSE date_trunc('month', now())\n    END AS start_date,\n    CASE '{{ $json.query.timeRange || \"MES_ATUAL\" }}'\n      WHEN 'MES_ATUAL' THEN now()\n      WHEN 'MES_ANTERIOR' THEN date_trunc('month', now())\n      WHEN 'ULTIMOS_7_DIAS' THEN now()\n      WHEN 'ULTIMOS_6_MESES' THEN now()\n      ELSE now()\n    END AS end_date\n)\n, base AS (\n  SELECT\n    a.id_atendimento,\n    a.status_atendimento,\n    EXTRACT(EPOCH FROM (a.data_hora_fim - a.data_hora_inicio)) / 60.0 AS handling_minutes,\n    aq.tipo_atendimento AS tipo,\n    aq.pontuacao_geral AS score\n  FROM atendimento a\n  LEFT JOIN analisequalidade aq ON aq.id_atendimento = a.id_atendimento\n  CROSS JOIN bounds b\n  WHERE a.data_hora_inicio >= b.start_date\n    AND a.data_hora_inicio <  b.end_date\n)\n, fechados AS (\n  SELECT handling_minutes\n  FROM base\n  WHERE status_atendimento = 'Fechado' AND handling_minutes IS NOT NULL\n)\nSELECT\n  COUNT(*) AS total,\n  COALESCE((SELECT AVG(handling_minutes) FROM fechados), 0) AS avg_handling_minutes,\n  CASE WHEN COUNT(*) = 0 THEN 0\n       ELSE ROUND(100.0 * SUM(CASE WHEN status_atendimento ILIKE 'ABANDONADO' THEN 1 ELSE 0 END)::numeric / COUNT(*), 1)\n  END AS abandonment_percent,\n  COUNT(CASE WHEN tipo = 'Dúvida' THEN 1 END) AS duvida_count,\n  COUNT(CASE WHEN tipo = 'Reclamação' THEN 1 END) AS reclamacao_count,\n  COUNT(CASE WHEN tipo = 'Suporte Técnico' THEN 1 END) AS suporte_count,\n  COUNT(CASE WHEN tipo = 'Vendas' THEN 1 END) AS vendas_count,\n  COALESCE(AVG(CASE WHEN tipo = 'Dúvida' THEN score END), 0) AS duvida_avg_score,\n  COALESCE(AVG(CASE WHEN tipo = 'Reclamação' THEN score END), 0) AS reclamacao_avg_score,\n  COALESCE(AVG(CASE WHEN tipo = 'Suporte Técnico' THEN score END), 0) AS suporte_avg_score,\n  COALESCE(AVG(CASE WHEN tipo = 'Vendas' THEN score END), 0) AS vendas_avg_score\nFROM base;",
+        "options": {}
+      },
+      "id": "443eb6da-1f2e-451d-a76a-5b4285087e57",
+      "name": "Query Extended Metrics",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -1824,
+        1888
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "9eNHYoZipXCw6w0w",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst hasData = items.length > 0 && items[0].json;\nconst data = hasData ? items[0].json : {};\n\nconst getNum = (v, d = 0) => {\n  const n = Number(v);\n  return Number.isFinite(n) ? n : d;\n};\n\nconst result = {\n  overallMetrics: {\n    total: getNum(data.total),\n    avgHandlingMinutes: Number(getNum(data.avg_handling_minutes).toFixed(1)),\n    abandonmentPercent: Number(getNum(data.abandonment_percent).toFixed(1))\n  },\n  typeDistribution: {\n    'Dúvida': getNum(data.duvida_count),\n    'Reclamação': getNum(data.reclamacao_count),\n    'Suporte Técnico': getNum(data.suporte_count),\n    'Vendas': getNum(data.vendas_count)\n  },\n  typeScoreAverages: {\n    'Dúvida': Number(getNum(data.duvida_avg_score).toFixed(1)),\n    'Reclamação': Number(getNum(data.reclamacao_avg_score).toFixed(1)),\n    'Suporte Técnico': Number(getNum(data.suporte_avg_score).toFixed(1)),\n    'Vendas': Number(getNum(data.vendas_avg_score).toFixed(1))\n  }\n};\n\nreturn [{ json: result }];"
+      },
+      "id": "ebb6aa42-5ffb-422b-83da-afa41543d3d3",
+      "name": "Format Extended Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1600,
+        1888
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {
+          "responseCode": 200,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Access-Control-Allow-Methods",
+                "value": "GET, POST, OPTIONS"
+              },
+              {
+                "name": "Access-Control-Allow-Headers",
+                "value": "Content-Type, Authorization"
+              },
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        }
+      },
+      "id": "e1e28830-ae23-469d-a98c-8046df017d76",
+      "name": "Return Extended Analytics",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        -1376,
+        1888
+      ]
+    },
+    {
+      "parameters": {
+        "path": "/api/conversations/export/:id",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "70b53ba7-004e-4e7d-a607-cdde630fe7c9",
+      "name": "GET /api/conversations/export/:id",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -816,
+        1872
+      ],
+      "webhookId": "ec256d84-4083-4cf2-b044-94b071740959"
+    },
+    {
+      "parameters": {
+        "jsCode": "const id = $input.first().json.params.id;\nreturn [{ json: { id_atendimento: parseInt(id) } }];"
+      },
+      "id": "e029df21-d722-4e84-abf8-352f6cbfc9c2",
+      "name": "Extract ID",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -592,
+        1872
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=SELECT TO_CHAR(m.data_hora_envio, 'YYYY-MM-DD HH24:MI:SS') as timestamp, COALESCE(m.remetente, 'Desconhecido') as remetente, COALESCE(m.tipo_midia, 'text') as tipo, COALESCE(m.conteudo_texto, '') as mensagem, COALESCE(m.url_midia, '') as url_midia FROM mensagem m WHERE m.id_atendimento = {{ $json.id_atendimento }} ORDER BY m.data_hora_envio ASC",
+        "options": {}
+      },
+      "id": "367a6f07-08cb-44e2-a1bf-d7c6425e22b7",
+      "name": "Query Messages",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -368,
+        1872
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "9eNHYoZipXCw6w0w",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const rows = $input.all().map(i => i.json);\nconst id = $('Extract ID').first().json.id_atendimento || 'export';\n\nif (!rows.length) {\n  return [{ json: { csv: 'Timestamp,Remetente,Tipo,Mensagem,URL_Mídia\\n', filename: `conversa_${id}.csv` } }];\n}\n\nconst escape = (value) => {\n  if (value == null) return '';\n  const str = String(value);\n  const needsQuotes = /[,\"\\n\\r]/.test(str);\n  return needsQuotes ? '\"' + str.replace(/\"/g, '\"\"') + '\"' : str;\n};\n\nconst headers = ['timestamp', 'remetente', 'tipo', 'mensagem', 'url_midia'];\nconst csvContent = [\n  'Timestamp,Remetente,Tipo,Mensagem,URL_Mídia',\n  ...rows.map(row => headers.map(h => escape(row[h])).join(','))\n].join('\\n');\n\nreturn [{ json: { csv: csvContent, filename: `conversa_${id}.csv` } }];"
+      },
+      "id": "bc0c0483-dc2f-42e9-bdac-1ce2e7bd2e62",
+      "name": "Format CSV Export",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -144,
+        1872
+      ]
+    },
+    {
+      "parameters": {
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "text/csv; charset=utf-8"
+              },
+              {
+                "name": "Content-Disposition",
+                "value": "={{ 'attachment; filename=\"' + $json.filename + '\"' }}"
+              },
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "e88cf02b-cf0c-43e6-bf22-ae4ac9e64508",
+      "name": "Return CSV Export",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        80,
+        1872
+      ]
+    },
+    {
+      "parameters": {
+        "path": "/api/conversations/audit",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "8353b7f3-9a16-4f06-9755-5344b4b58dd0",
+      "name": "GET /api/conversations/audit1",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -3872,
+        2352
+      ],
+      "webhookId": "4c223fa2-d9bd-493b-9010-99470f8626b5"
+    },
+    {
+      "parameters": {
+        "jsCode": "const req = $input.first().json || {};\nconst q = req.query || req;\n\nreturn [{\n  json: {\n    search: q.search || '',\n    timeRange: q.timeRange || 'MES_ATUAL',\n    startDate: q.startDate || '',\n    endDate: q.endDate || '',\n    sentiment: q.sentiment || 'Todos',\n    tipo: q.tipo || 'Todos',\n    limit: parseInt(q.limit) || 100,\n    offset: parseInt(q.offset) || 0\n  }\n}];"
+      },
+      "id": "18c1b263-7856-4671-a548-14d1e3b16fd9",
+      "name": "Extract Query Params1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -3648,
+        2352
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const p = $input.first().json;\nconst dateExpr = \"COALESCE(a.data_hora_fim, a.data_hora_inicio)\";\nlet dateFilter = '1=1';\n\nswitch (p.timeRange) {\n  case 'HOJE': dateFilter = `DATE(${dateExpr}) = CURRENT_DATE`; break;\n  case 'MES_ATUAL': dateFilter = `EXTRACT(MONTH FROM ${dateExpr}) = EXTRACT(MONTH FROM CURRENT_DATE) AND EXTRACT(YEAR FROM ${dateExpr}) = EXTRACT(YEAR FROM CURRENT_DATE)`; break;\n  case 'ULTIMO_MES': dateFilter = `${dateExpr} >= CURRENT_DATE - INTERVAL '30 days'`; break;\n  case 'ULTIMOS_6_MESES': dateFilter = `${dateExpr} >= CURRENT_DATE - INTERVAL '6 months'`; break;\n  case 'PERSONALIZADO': dateFilter = p.startDate && p.endDate ? `${dateExpr} BETWEEN '${p.startDate}' AND '${p.endDate}'` : dateFilter; break;\n}\n\nreturn [{ json: { ...p, dateFilter } }];"
+      },
+      "id": "3e3fa86a-8460-4899-a232-5f75c13b7c5a",
+      "name": "Build Date Filter Audit1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -3424,
+        2352
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=WITH primeira_msg AS (\n  SELECT id_atendimento, MIN(data_hora_envio) primeira_data_hora,\n         (SELECT conteudo_texto FROM mensagem WHERE id_atendimento = m.id_atendimento ORDER BY data_hora_envio ASC LIMIT 1) primeira_mensagem\n  FROM mensagem m GROUP BY id_atendimento\n)\nSELECT DISTINCT ON (a.id_atendimento)\n  a.id_atendimento,\n  COALESCE(a.nome_cliente, 'Sem nome') AS empresa,\n  COALESCE(a.telefone_cliente, 'Sem telefone') telefone_cliente,\n  pm.primeira_data_hora data_hora,\n  COALESCE(aq.sentimento_geral, 'N/A') sentimento_geral,\n  COALESCE(aq.tipo_atendimento, 'N/A') tipo_atendimento,\n  COALESCE(aq.pontuacao_geral, 0) pontuacao_geral,\n  COALESCE(LEFT(pm.primeira_mensagem, 100), 'Sem mensagem') AS mensagem_trecho\nFROM atendimento a\nLEFT JOIN analisequalidade aq ON a.id_atendimento = aq.id_atendimento\nLEFT JOIN primeira_msg pm ON a.id_atendimento = pm.id_atendimento\nWHERE a.status_atendimento = 'Fechado'\nAND {{ $json.dateFilter }}\nAND aq.sentimento_geral IS NOT NULL AND aq.sentimento_geral != 'N/A'\nLIMIT {{ $json.limit }} OFFSET {{ $json.offset }}",
+        "options": {}
+      },
+      "id": "f8f0f43c-fb88-4499-8a90-b223c71d61e2",
+      "name": "Query Audit List1",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -3200,
+        2448
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "9eNHYoZipXCw6w0w",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=SELECT COUNT(*) total_count FROM atendimento a LEFT JOIN analisequalidade aq ON a.id_atendimento = aq.id_atendimento WHERE a.status_atendimento = 'Fechado' AND {{ $json.dateFilter }} AND aq.sentimento_geral IS NOT NULL AND aq.sentimento_geral != 'N/A'",
+        "options": {}
+      },
+      "id": "6ebb633c-9556-4717-9f1e-dadd8538e898",
+      "name": "Count Total Records1",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -3200,
+        2256
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "9eNHYoZipXCw6w0w",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const inputs = $input.all();\n\n// registros da query (Query Audit List1)\nconst conversations = inputs\n  .filter(i => i.json.id_atendimento !== undefined)\n  .map(i => i.json);\n\n// total do count\nconst countItem = inputs.find(i => i.json.total_count !== undefined);\nconst total = countItem ? Number(countItem.json.total_count) : 0;\n\nreturn [{\n  json: {\n    total,\n    conversations\n  }\n}];\n"
+      },
+      "id": "3090ec38-57ec-4a70-b6f6-13a846db9dff",
+      "name": "Format Audit Response1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2752,
+        2352
+      ]
+    },
+    {
+      "parameters": {
+        "options": {
+          "responseCode": 200,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Access-Control-Allow-Methods",
+                "value": "GET, OPTIONS"
+              },
+              {
+                "name": "Access-Control-Allow-Headers",
+                "value": "Content-Type, Authorization"
+              },
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        }
+      },
+      "id": "6f88a0a5-4166-4b93-8581-f3a3f3fa9c4c",
+      "name": "Return Audit Response1",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        -2528,
+        2352
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "5a69e83e-44ff-442c-8ee7-825e84e5fef2",
+      "name": "Merge Audit Results",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -2976,
+        2352
+      ]
+    },
+    {
+      "parameters": {
+        "content": "# Routes",
+        "height": 1696,
+        "width": 4982,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -4224,
+        1200
+      ],
+      "typeVersion": 1,
+      "id": "b968ebc6-365a-43c1-b2f6-14e6366c6b7e",
+      "name": "Sticky Note"
+    }
+  ],
+  "connections": {
+    "GET /api/session/status": {
+      "main": [
+        [
+          {
+            "node": "Call WAHA API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call WAHA API": {
+      "main": [
+        [
+          {
+            "node": "Format Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Response": {
+      "main": [
+        [
+          {
+            "node": "Return to Frontend",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET /api/analytics/metrics2": {
+      "main": [
+        [
+          {
+            "node": "Build Date Filter2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Date Filter2": {
+      "main": [
+        [
+          {
+            "node": "Query Overall Metrics1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Query Top Attendant2",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Query Service Metrics2",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Query Type Averages2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Query Overall Metrics1": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Query Top Attendant2": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Query Service Metrics2": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Query Type Averages2": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    },
+    "Format Final Response2": {
+      "main": [
+        [
+          {
+            "node": "Return Analytics2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge1": {
+      "main": [
+        [
+          {
+            "node": "Format Final Response2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook CSV Export": {
+      "main": [
+        [
+          {
+            "node": "Build Date Filter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Date Filter": {
+      "main": [
+        [
+          {
+            "node": "Query CSV Rows1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format CSV": {
+      "main": [
+        [
+          {
+            "node": "Return CSV",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Query CSV Rows1": {
+      "main": [
+        [
+          {
+            "node": "Format CSV",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET /api/analytics/metrics-extended": {
+      "main": [
+        [
+          {
+            "node": "Query Extended Metrics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Query Extended Metrics": {
+      "main": [
+        [
+          {
+            "node": "Format Extended Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Extended Response": {
+      "main": [
+        [
+          {
+            "node": "Return Extended Analytics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET /api/conversations/export/:id": {
+      "main": [
+        [
+          {
+            "node": "Extract ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract ID": {
+      "main": [
+        [
+          {
+            "node": "Query Messages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Query Messages": {
+      "main": [
+        [
+          {
+            "node": "Format CSV Export",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format CSV Export": {
+      "main": [
+        [
+          {
+            "node": "Return CSV Export",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET /api/conversations/audit1": {
+      "main": [
+        [
+          {
+            "node": "Extract Query Params1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Query Params1": {
+      "main": [
+        [
+          {
+            "node": "Build Date Filter Audit1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Date Filter Audit1": {
+      "main": [
+        [
+          {
+            "node": "Query Audit List1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Count Total Records1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Query Audit List1": {
+      "main": [
+        [
+          {
+            "node": "Merge Audit Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Count Total Records1": {
+      "main": [
+        [
+          {
+            "node": "Merge Audit Results",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Format Audit Response1": {
+      "main": [
+        [
+          {
+            "node": "Return Audit Response1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Audit Results": {
+      "main": [
+        [
+          {
+            "node": "Format Audit Response1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "c00682a2fc579bff9615aa9be956cba66c69c42ed5658287932fc14102e898dd"
+  }
+}
