@@ -91,34 +91,41 @@ async def handle_media_message(message: WahaMessage):
             logger.error(f"❌ Error downloading media: {e}")
             return
 
-    # Route based on Type
-    if "image" in mime_type:
-        logger.info("📸 Detected Image -> Sending to Gemini Vision...")
-        description = await llm_service.analyze_media(media_bytes, mime_type, "Descreva esta imagem e extraia informações relevantes (nomes, valores, datas) se houver.")
-        logger.info(f"🧠 Image Analysis: {description}")
-        
-    elif "audio" in mime_type or "ogg" in mime_type:
-        logger.info("🎤 Detected Audio -> Sending to Gemini Audio...")
-        transcription = await llm_service.analyze_media(media_bytes, mime_type, "Transcreva este áudio fielmente. Se houver instruções, identifique-as.")
-        logger.info(f"🗣️ Audio Transcription: {transcription}")
-        
-    elif "pdf" in mime_type:
-        logger.info("qh Detected PDF -> Sending to Gemini Docs...")
-        summary = await llm_service.analyze_media(media_bytes, mime_type, "Resuma este documento e extraia os pontos principais.")
-        logger.info(f"📄 PDF Analysis: {summary}")
-        
-    elif "spreadsheet" in mime_type or "excel" in mime_type:
-        logger.info("📊 Detected Excel -> Processing with Pandas...")
-        import pandas as pd
-        import io
-        try:
-            df = pd.read_excel(io.BytesIO(media_bytes))
-            csv_preview = df.head(50).to_csv(index=False) # Limit to 50 rows for token sanity
+    # Create DB Session for config lookup
+    from core.database import SessionLocal
+    db = SessionLocal()
+    try:
+        # Route based on Type
+        if "image" in mime_type:
+            logger.info("📸 Detected Image -> Sending to Gemini Vision...")
+            description = await llm_service.analyze_media(db, media_bytes, mime_type, "Descreva esta imagem e extraia informações relevantes (nomes, valores, datas) se houver.")
+            logger.info(f"🧠 Image Analysis: {description}")
             
-            analysis = await llm_service.analyze_conversation(
-                f"Analise esta planilha (primeiras 50 linhas):\n{csv_preview}\n\nQuais são os insights principais? Responda de forma executiva.", 
-                provider="openai" # Or Gemini
-            )
-            logger.info(f"📊 Excel Analysis: {analysis}")
-        except Exception as e:
-            logger.error(f"❌ Error processing Excel: {e}")
+        elif "audio" in mime_type or "ogg" in mime_type:
+            logger.info("🎤 Detected Audio -> Sending to Gemini Audio...")
+            transcription = await llm_service.analyze_media(db, media_bytes, mime_type, "Transcreva este áudio fielmente. Se houver instruções, identifique-as.")
+            logger.info(f"🗣️ Audio Transcription: {transcription}")
+            
+        elif "pdf" in mime_type:
+            logger.info("qh Detected PDF -> Sending to Gemini Docs...")
+            summary = await llm_service.analyze_media(db, media_bytes, mime_type, "Resuma este documento e extraia os pontos principais.")
+            logger.info(f"📄 PDF Analysis: {summary}")
+            
+        elif "spreadsheet" in mime_type or "excel" in mime_type:
+            logger.info("📊 Detected Excel -> Processing with Pandas...")
+            import pandas as pd
+            import io
+            try:
+                df = pd.read_excel(io.BytesIO(media_bytes))
+                csv_preview = df.head(50).to_csv(index=False) # Limit to 50 rows for token sanity
+                
+                analysis = await llm_service.analyze_conversation(
+                    db,
+                    f"Analise esta planilha (primeiras 50 linhas):\n{csv_preview}\n\nQuais são os insights principais? Responda de forma executiva.", 
+                    provider="openai" # Or Gemini
+                )
+                logger.info(f"📊 Excel Analysis: {analysis}")
+            except Exception as e:
+                logger.error(f"❌ Error processing Excel: {e}")
+    finally:
+        db.close()

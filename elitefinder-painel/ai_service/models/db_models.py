@@ -25,3 +25,14 @@ class Mensagem(Base):
     data_hora_envio = Column(DateTime(timezone=True), default=func.now(), nullable=False)
     remetente_tipo = Column(String(50), nullable=False) # 'cliente' or 'atendente'
     tipo_analise = Column(String(50), nullable=True)
+
+class AgentConfig(Base):
+    __tablename__ = "agent_config"
+
+    id = Column(Integer, primary_key=True, index=True)
+    provider = Column(String(50), unique=True, index=True, nullable=False) # openai, anthropic, gemini
+    model = Column(String(100), nullable=False)
+    temperature = Column(Float, default=0.7)
+    max_tokens = Column(Integer, default=2000)
+    system_prompt = Column(Text, nullable=True)
+    is_active = Column(Boolean, default=True)

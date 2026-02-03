@@ -14,7 +14,7 @@ class ReportResponse(BaseModel):
     action_items: List[str]
     forecast: str
 
-async def generate_strategic_report(request: ReportRequest) -> ReportResponse:
+async def generate_strategic_report(request: ReportRequest, db) -> ReportResponse:
     # Build context for Gemini
     prompt = f"""
     Atue como um Diretor de Estratégia (CSO) para esta empresa.
@@ -45,7 +45,7 @@ async def generate_strategic_report(request: ReportRequest) -> ReportResponse:
     }}
     """
     
-    response_text = await llm_service.generate_report(prompt)
+    response_text = await llm_service.generate_report(db, prompt)
     
     try:
         import json
