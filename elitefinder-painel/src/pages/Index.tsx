@@ -5,6 +5,9 @@ import Login from './Login';
 import logo from '../assets/12597368.png';
 import { apiFetchMetricsOverall, apiFetchMetricsExtended, OverallAnalyticsResponse, ExtendedAnalyticsResponse, apiExportAnalyticsCsv, apiExportConversationsCsv as apiExportConversationsFromBackend, apiExportSalesReportCsv } from '../lib/analyticsApi';
 import { apiExportConversationsCsv, apiFetchAuditConversations, AuditConversation } from '../lib/conversationsApi';
+import { AlertBanner, AlertSummaryCard } from '../components/AlertBanner';
+import { ReportsDashboard } from '../components/ReportsDashboard';
+
 
 // Dados simulados caso a IA não responda
 const mockAnalyticsData = [
@@ -1442,6 +1445,10 @@ export default function Index() {
         </div>
       </section>
 
+      {/* Dashboard de Relatórios e Insights */}
+      <section className="mb-6 sm:mb-10">
+        <ReportsDashboard />
+      </section>
 
 
       {/* Card de Alertas Críticos - Apenas se houver 3+ alertas e não foi dispensado (acima dos filtros) */}

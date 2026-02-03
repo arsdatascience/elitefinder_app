@@ -5,6 +5,8 @@ import { handleDemo } from "./routes/demo";
 import analyticsRouter from "./routes/analytics";
 import authRouter from "./routes/auth";
 import adminRouter from "./routes/admin";
+import alertsRouter from "./routes/alerts";
+import reportsRouter from "./routes/reports";
 
 // CORS configuration
 const allowedOrigins = [
@@ -46,5 +48,12 @@ export function createServer() {
   // Admin routes
   app.use("/api/admin", adminRouter);
 
+  // Alerts routes
+  app.use("/api/alerts", alertsRouter);
+
+  // Reports routes
+  app.use("/api/reports", reportsRouter);
+
   return app;
 }
+
