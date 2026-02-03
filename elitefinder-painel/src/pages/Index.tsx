@@ -1173,7 +1173,7 @@ export default function Index() {
 
   // ===================== TELA 3: DASHBOARD =====================
   return (
-    <div className="min-h-screen bg-gray-50 font-sans p-3 sm:p-4 md:p-6 lg:p-10">
+    <div className="min-h-screen bg-[#0999d6] font-sans p-3 sm:p-4 md:p-6 lg:p-10">
       <header className="mb-6 sm:mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800">Elite Finder - Dashboard de Qualidade</h1>
