@@ -22,6 +22,9 @@ async def analyze_endpoint(request: AnalysisRequest):
 @app.post("/report", response_model=ReportResponse, dependencies=[Depends(get_api_key)])
 async def report_endpoint(request: ReportRequest):
     return await generate_strategic_report(request)
+    
+from routers import webhooks
+app.include_router(webhooks.router, prefix="/webhooks", tags=["Webhooks"])
 
 if __name__ == "__main__":
     import uvicorn

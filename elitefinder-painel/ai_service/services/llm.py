@@ -64,4 +64,24 @@ class LLMService:
             # Fallback to Gemini if others fail?
             return f"Erro na análise: {str(e)}"
 
+    async def analyze_media(self, media_bytes: bytes, mime_type: str, prompt: str = "Analise este arquivo.") -> str:
+        """
+        Analyzes generic media (Image, Audio, PDF) using Gemini 1.5 Flash
+        """
+        try:
+            # Gemini supports Image, Audio, and PDF via the 'data' interface
+            model = genai.GenerativeModel('gemini-1.5-flash')
+            
+            response = model.generate_content([
+                prompt,
+                {
+                    "mime_type": mime_type,
+                    "data": media_bytes
+                }
+            ])
+            return response.text
+        except Exception as e:
+            print(f"Error analyzing media with Gemini: {e}")
+            return f"Erro ao analisar mídia: {str(e)}"
+
 llm_service = LLMService()
