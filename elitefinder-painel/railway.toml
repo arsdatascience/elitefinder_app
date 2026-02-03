@@ -3,7 +3,7 @@ builder = "dockerfile"
 dockerfilePath = "server/Dockerfile"
 
 # CRITICAL: Build from root context to access package.json
-# watchPatterns removed to ensure all changes trigger deploy
+watchPatterns = ["server/**", "shared/**", "package.json", "pnpm-lock.yaml"]
 
 
 [deploy]
