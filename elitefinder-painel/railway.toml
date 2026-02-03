@@ -3,7 +3,7 @@ builder = "dockerfile"
 dockerfilePath = "Dockerfile.backend"
 
 # CRITICAL: Build from root context to access package.json
-watchPatterns = ["server/**", "shared/**", "package.json", "pnpm-lock.yaml"]
+watchPatterns = ["server/**", "shared/**", "package.json", "pnpm-lock.yaml", "Dockerfile.backend", "railway.toml"]
 
 [deploy]
 startCommand = "node dist/server/node-build.mjs"
