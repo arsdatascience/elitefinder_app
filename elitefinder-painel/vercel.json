@@ -7,7 +7,7 @@
     "rewrites": [
         {
             "source": "/api/proxy/waha/:match*",
-            "destination": "http://waha.marketsharedigital.com.br/:match*"
+            "destination": "https://waha-elitefinder.up.railway.app/:match*"
         },
         {
             "source": "/api/proxy/n8n/:match*",
