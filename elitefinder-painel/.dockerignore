@@ -59,3 +59,4 @@ packages/vcp-common/native-bridge/build
 packages/vcp-common/_tests_/dataset-ranking.csv
 node_modules/
 .gitignore
+!server/Dockerfile

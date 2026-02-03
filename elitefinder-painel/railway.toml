@@ -1,6 +1,6 @@
 [build]
 builder = "dockerfile"
-dockerfilePath = "Dockerfile.backend"
+dockerfilePath = "server/Dockerfile"
 
 # CRITICAL: Build from root context to access package.json
 # watchPatterns removed to ensure all changes trigger deploy
