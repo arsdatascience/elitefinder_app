@@ -18,7 +18,7 @@ const mockAnalyticsData = [
 ];
 
 export default function Index() {
-  const wahaBase = import.meta.env.VITE_WAHA_BASE;
+  const wahaBase = import.meta.env.VITE_WAHA_BASE || '/api/proxy/waha';
   const wahaApiKey = import.meta.env.VITE_WAHA_API_KEY || '';
   const wahaGetHeaders = { 'x-api-key': wahaApiKey };
   const wahaJsonHeaders = { 'Content-Type': 'application/json', 'x-api-key': wahaApiKey };

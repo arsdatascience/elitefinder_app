@@ -1,7 +1,7 @@
 const API_BASE = import.meta.env.VITE_ANALYTICS_API_BASE || 'http://localhost:5001';
-const N8N_METRICS_ENDPOINT = import.meta.env.VITE_N8N_METRICS_ENDPOINT || 'http://localhost:5000/webhook/api/analytics/metrics';
-const N8N_METRICS_EXTENDED_ENDPOINT = import.meta.env.VITE_N8N_METRICS_EXTENDED_ENDPOINT || 'http://localhost:5000/webhook/api/analytics/metrics-extended';
-const N8N_ANALISE_MANUAL_ENDPOINT = import.meta.env.VITE_N8N_ANALISE_MANUAL_ENDPOINT || 'http://localhost:5000/webhook/analise-manual';
+const N8N_METRICS_ENDPOINT = import.meta.env.VITE_N8N_METRICS_ENDPOINT || '/api/proxy/n8n/api/analytics/metrics';
+const N8N_METRICS_EXTENDED_ENDPOINT = import.meta.env.VITE_N8N_METRICS_EXTENDED_ENDPOINT || '/api/proxy/n8n/api/analytics/metrics-extended';
+const N8N_ANALISE_MANUAL_ENDPOINT = import.meta.env.VITE_N8N_ANALISE_MANUAL_ENDPOINT || '/api/proxy/n8n/analise-manual';
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
 
 export interface OverallMetricsData {
@@ -35,17 +35,17 @@ export async function apiFetchMetricsOverall(timeRange: string = 'MES_ATUAL'): P
   try {
     const url = new URL(N8N_METRICS_ENDPOINT);
     url.searchParams.append('timeRange', timeRange);
-    
+
     const response = await fetch(url.toString(), {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' }
     });
-    
+
     if (!response.ok) {
       console.error(`Erro ao buscar metricas overall: ${response.status} ${response.statusText}`);
       return null;
     }
-    
+
     const data = await response.json();
     if (Array.isArray(data) && data.length > 0) return data[0] as OverallAnalyticsResponse;
     if (data.overallMetrics) return data as OverallAnalyticsResponse;
@@ -61,17 +61,17 @@ export async function apiFetchMetricsExtended(timeRange: string = 'MES_ATUAL'): 
   try {
     const url = new URL(N8N_METRICS_EXTENDED_ENDPOINT);
     url.searchParams.append('timeRange', timeRange);
-    
+
     const response = await fetch(url.toString(), {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' }
     });
-    
+
     if (!response.ok) {
       console.error(`Erro ao buscar metricas extended: ${response.status} ${response.statusText}`);
       return null;
     }
-    
+
     const data = await response.json();
     if (Array.isArray(data) && data.length > 0) return data[0] as ExtendedAnalyticsResponse;
     if (data.overallMetrics) return data as ExtendedAnalyticsResponse;

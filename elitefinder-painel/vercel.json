@@ -6,6 +6,14 @@
     "installCommand": "pnpm install",
     "rewrites": [
         {
+            "source": "/api/proxy/waha/:match*",
+            "destination": "http://waha.marketsharedigital.com.br/:match*"
+        },
+        {
+            "source": "/api/proxy/n8n/:match*",
+            "destination": "http://n8n.marketsharedigital.com.br/webhook/:match*"
+        },
+        {
             "source": "/(.*)",
             "destination": "/index.html"
         }

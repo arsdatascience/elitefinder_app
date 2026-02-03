@@ -15,6 +15,18 @@ export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
     port: 8080,
+    proxy: {
+      '/api/proxy/waha': {
+        target: 'http://waha.marketsharedigital.com.br',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/proxy\/waha/, '')
+      },
+      '/api/proxy/n8n': {
+        target: 'http://n8n.marketsharedigital.com.br/webhook',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/proxy\/n8n/, '')
+      }
+    },
     fs: {
       allow: ["./client", "./shared"],
       deny: [".env", ".env.*", "*.{crt,pem}", "**/.git/**", "server/**"],

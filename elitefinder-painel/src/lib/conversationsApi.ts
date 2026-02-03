@@ -1,5 +1,5 @@
-const N8N_CONVERSATIONS_EXPORT_ENDPOINT = import.meta.env.VITE_N8N_CONVERSATIONS_EXPORT_ENDPOINT || 'https://n8n.marketsharedigital.com.br/webhook/api/conversations/export';
-const N8N_CONVERSATIONS_AUDIT_ENDPOINT = import.meta.env.VITE_N8N_CONVERSATIONS_AUDIT_ENDPOINT || 'https://n8n.marketsharedigital.com.br/webhook/api/conversations/audit';
+const N8N_CONVERSATIONS_EXPORT_ENDPOINT = import.meta.env.VITE_N8N_CONVERSATIONS_EXPORT_ENDPOINT || '/api/proxy/n8n/api/conversations/export';
+const N8N_CONVERSATIONS_AUDIT_ENDPOINT = import.meta.env.VITE_N8N_CONVERSATIONS_AUDIT_ENDPOINT || '/api/proxy/n8n/api/conversations/audit';
 
 export interface ExportFilters {
 	timeRange?: 'HOJE' | 'MES_ATUAL' | 'ULTIMO_MES' | 'ULTIMOS_6_MESES' | 'PERSONALIZADO';
@@ -54,14 +54,14 @@ export async function apiExportConversationsCsv(filters: ExportFilters = {}): Pr
 
 	const response = await fetch(url.toString(), { method: 'GET' });
 	if (!response.ok) throw new Error(`Erro ao exportar CSV (${response.status})`);
-	
+
 	// n8n retorna JSON com campo "csv" contendo o texto CSV
 	const data = await response.json();
 	let csvText = data.csv || '';
 
 	// Adiciona o BOM para o Excel entender UTF-8 e troca vírgula por ponto e vírgula
 	csvText = '\uFEFF' + csvText.replace(/,/g, ';');
-	
+
 	// Converte o texto CSV para Blob
 	return new Blob([csvText], { type: 'text/csv;charset=utf-8' });
 }
@@ -79,7 +79,7 @@ export async function apiFetchAuditConversations(filters: AuditFilters = {}): Pr
 
 	const response = await fetch(url.toString(), { method: 'GET' });
 	if (!response.ok) throw new Error(`Erro ao buscar auditoria (${response.status})`);
-	
+
 	const data = await response.json();
 	// n8n retorna um objeto {total, conversations} direto (ou array com 1 objeto)
 	if (Array.isArray(data) && data.length > 0) {
