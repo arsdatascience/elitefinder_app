@@ -54,7 +54,7 @@ export default function Index() {
 
 
   // Helper para calcular intervalos de tempo
-  const getRangeDates = (range: string) => {
+  const getRangeDates = (range: string): { start: string; end: string } => {
     const today = new Date();
     const format = (d: Date) => d.toISOString().split('T')[0];
     switch (range) {
@@ -1260,7 +1260,7 @@ export default function Index() {
                             onClick={() => {
                               markAlertAsRead(alert.id);
                               // Scroll para a conversa na tabela
-                              const element = document.getElementById(`conversation-${alert.conversation.id}`);
+                              const element = document.getElementById(`conversation-${alert.conversation.id_atendimento}`);
                               if (element) {
                                 element.scrollIntoView({ behavior: 'smooth', block: 'center' });
                                 element.classList.add('ring-2', 'ring-indigo-400', 'ring-offset-2');
@@ -1287,7 +1287,7 @@ export default function Index() {
                                 <p className="text-xs text-gray-600 mb-2 line-clamp-2">{alert.description}</p>
                                 <div className="flex items-center justify-between text-xs text-gray-500 gap-2">
                                   <span className="font-medium truncate">{alert.conversation.id_atendente || 'N/A'}</span>
-                                  <span className="text-[10px] sm:text-xs whitespace-nowrap">{alert.conversation.data_hora_inicio ? new Date(alert.conversation.data_hora_inicio).toLocaleString('pt-BR') : 'N/A'}</span>
+                                  <span className="text-[10px] sm:text-xs whitespace-nowrap">{alert.conversation.data_hora ? new Date(alert.conversation.data_hora).toLocaleString('pt-BR') : 'N/A'}</span>
                                 </div>
                                 <p className="text-xs text-gray-400 mt-1 truncate">
                                   "{(alert.conversation.mensagem_trecho || 'Sem mensagem').substring(0, 50)}..."

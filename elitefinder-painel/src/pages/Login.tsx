@@ -4,7 +4,11 @@ import { LogIn, UserPlus } from 'lucide-react';
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
 
-export default function Login() {
+interface LoginProps {
+  onLogin?: () => void;
+}
+
+export default function Login({ onLogin }: LoginProps) {
   const navigate = useNavigate();
   const [isRegister, setIsRegister] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -42,7 +46,11 @@ export default function Login() {
       }
 
       localStorage.setItem('token', data.token);
-      navigate('/');
+      if (onLogin) {
+        onLogin();
+      } else {
+        navigate('/');
+      }
     } catch (err: any) {
       setError(err.message);
     } finally {
