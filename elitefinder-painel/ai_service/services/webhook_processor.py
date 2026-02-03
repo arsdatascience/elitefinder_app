@@ -28,16 +28,37 @@ async def process_waha_payload(payload: WahaWebhookPayload):
     except Exception as e:
         logger.error(f"❌ Error processing message {message.id}: {str(e)}", exc_info=True)
 
+import httpx
+from services.llm import llm_service
+from services.message_service import message_service
+from core.database import SessionLocal
+
 async def handle_text_message(message: WahaMessage):
     """
     Process plain text messages.
     """
     logger.info(f"📝 Text Message: {message.body}")
-    # TODO: Save to DB
-    # TODO: Integrate with AI Analysis
-
-import httpx
-from services.llm import llm_service
+    
+    # DB Persistence
+    db = SessionLocal()
+    try:
+        contact_name = message._data.get("notifyName", "Desconhecido") if message._data else "Desconhecido"
+        # Extract phone number from remoteJid or from_
+        phone = message.from_
+        
+        await message_service.save_message(
+            db=db, 
+            phone_number=phone, 
+            message_text=message.body or "", 
+            sender_type="cliente", 
+            contact_name=contact_name
+        )
+    except Exception as e:
+        logger.error(f"❌ Failed to save message: {e}")
+    finally:
+        db.close()
+    
+    # TODO: Integrate with AI Analysis (Auto-Reply)
 
 async def handle_media_message(message: WahaMessage):
     """
