@@ -10,14 +10,14 @@ const pool = new Pool({
     ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
 });
 
-// All admin routes require authentication and admin/gerente role
+// All admin routes require authentication and admin/gerente/superadmin role
 router.use(authMiddleware);
-router.use(requireRole('admin', 'gerente'));
+router.use(requireRole('admin', 'gerente', 'superadmin'));
 
 // ========== TENANT MANAGEMENT ==========
 
-// GET /api/admin/tenants - Listar todos os tenants (apenas super-admin)
-router.get('/tenants', requireRole('admin'), async (req: AuthRequest, res: Response) => {
+// GET /api/admin/tenants - Listar todos os tenants (apenas super-admin e admin)
+router.get('/tenants', requireRole('admin', 'superadmin'), async (req: AuthRequest, res: Response) => {
     try {
         const result = await pool.query(`
       SELECT t.*, 
@@ -33,7 +33,7 @@ router.get('/tenants', requireRole('admin'), async (req: AuthRequest, res: Respo
 });
 
 // POST /api/admin/tenants - Criar novo tenant
-router.post('/tenants', requireRole('admin'), async (req: AuthRequest, res: Response) => {
+router.post('/tenants', requireRole('admin', 'superadmin'), async (req: AuthRequest, res: Response) => {
     try {
         const { nome, slug } = req.body;
 
@@ -59,7 +59,7 @@ router.post('/tenants', requireRole('admin'), async (req: AuthRequest, res: Resp
 });
 
 // PATCH /api/admin/tenants/:id - Atualizar tenant
-router.patch('/tenants/:id', requireRole('admin'), async (req: AuthRequest, res: Response) => {
+router.patch('/tenants/:id', requireRole('admin', 'superadmin'), async (req: AuthRequest, res: Response) => {
     try {
         const { id } = req.params;
         const { nome, ativo } = req.body;
@@ -103,8 +103,10 @@ router.patch('/tenants/:id', requireRole('admin'), async (req: AuthRequest, res:
 // GET /api/admin/users - Listar usuários do tenant
 router.get('/users', async (req: AuthRequest, res: Response) => {
     try {
-        const tenantFilter = req.userRole === 'admin' ? '' : 'WHERE u.id_tenant = $1';
-        const params = req.userRole === 'admin' ? [] : [req.tenantId];
+        // Admin e Superadmin veem todos se não especificar tenant
+        const isAdmin = req.userRole === 'admin' || req.userRole === 'superadmin';
+        const tenantFilter = isAdmin ? '' : 'WHERE u.id_tenant = $1';
+        const params = isAdmin ? [] : [req.tenantId];
 
         const result = await pool.query(`
       SELECT u.id_usuario, u.nome, u.email, u.ativo, u.created_at,
@@ -221,8 +223,9 @@ router.get('/roles', async (_req: AuthRequest, res: Response) => {
 // GET /api/admin/stats - Estatísticas do tenant
 router.get('/stats', async (req: AuthRequest, res: Response) => {
     try {
-        const tenantFilter = req.userRole === 'admin' ? '' : 'WHERE id_tenant = $1';
-        const params = req.userRole === 'admin' ? [] : [req.tenantId];
+        const isAdmin = req.userRole === 'admin' || req.userRole === 'superadmin';
+        const tenantFilter = isAdmin ? '' : 'WHERE id_tenant = $1';
+        const params = isAdmin ? [] : [req.tenantId];
 
         const [users, atendimentos, analises] = await Promise.all([
             pool.query(`SELECT COUNT(*) as total FROM Usuario ${tenantFilter}`, params),

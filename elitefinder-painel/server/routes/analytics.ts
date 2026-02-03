@@ -15,7 +15,7 @@ router.use(authMiddleware);
 
 // Helper para obter filtro de tenant
 const getTenantFilter = (req: AuthRequest, tableAlias?: string) => {
-  if (req.userRole === 'admin') return ''; // Admin vê tudo
+  if (req.userRole === 'admin' || req.userRole === 'superadmin') return ''; // Admin e Superadmin veem tudo
   const prefix = tableAlias ? `${tableAlias}.` : '';
   return `${prefix}id_tenant = ${req.tenantId}`;
 };
