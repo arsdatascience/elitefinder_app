@@ -2,23 +2,7 @@ import json
 from services.llm import llm_service
 from schemas.analysis import AnalysisRequest, AnalysisResponse
 
-    # 3. Call LLM (Using OpenAI/Anthropic/Gemini for Analysis)
-    # Use provider from request, default to openai
-    from core.database import get_db
-    # We need a db session here. We should inject it in the handler
-    pass 
 
-# Oh wait, I can't inject 'db' inside the function body so easily if it's not in the signature.
-# I need to update the signature to accept db: Session = Depends(get_db)
-# But I am editing the function body here.
-# I must update the function signature first. I will do this in the next step or assume I can do it here.
-# Actually, analyze_conversation in analysis.py (services layer) does NOT have dependency injection support directly.
-# Dependency injection happens in the ROUTER.
-# So I need to:
-# 1. Update routers/analysis.py to inject db.
-# 2. Update services/analysis.py to accept db as argument.
-
-# THIS STEP: Updating services/analysis.py to accept db.
 async def analyze_conversation(request: AnalysisRequest, db) -> AnalysisResponse:
     # 1. Prepare Transcript
     transcript = ""
