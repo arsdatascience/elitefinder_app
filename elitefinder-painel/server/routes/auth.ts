@@ -101,13 +101,16 @@ router.post('/login', async (req: Request, res: Response) => {
             return res.status(400).json({ error: 'Email e senha são obrigatórios' });
         }
 
+        const emailTrimmed = email.trim();
+        const senhaTrimmed = senha.trim();
+
         // Buscar usuário com role
         const result = await pool.query(`
       SELECT u.id_usuario, u.id_tenant, u.nome, u.email, u.senha_hash, u.ativo, r.nome as role
       FROM Usuario u
       JOIN Role r ON u.id_role = r.id_role
       WHERE u.email = $1
-    `, [email]);
+    `, [emailTrimmed]);
 
         if (result.rows.length === 0) {
             return res.status(401).json({ error: 'Credenciais inválidas' });
@@ -120,7 +123,7 @@ router.post('/login', async (req: Request, res: Response) => {
         }
 
         // Verificar senha
-        const senhaValida = await bcrypt.compare(senha, user.senha_hash);
+        const senhaValida = await bcrypt.compare(senhaTrimmed, user.senha_hash);
         if (!senhaValida) {
             return res.status(401).json({ error: 'Credenciais inválidas' });
         }
