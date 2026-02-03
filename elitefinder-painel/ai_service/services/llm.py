@@ -36,7 +36,13 @@ class LLMService:
         Analyzes conversations using OpenAI (GPT-5.2) or Anthropic (Claude 4.5)
         """
         try:
-            if provider == "anthropic" and self.anthropic_client:
+            if provider == "gemini":
+                # Use the initialized Gemini model (or create a specific one if needed)
+                # Assuming self.gemini_model is general purpose enough (e.g. 1.5 Pro)
+                response = self.gemini_model.generate_content(prompt)
+                return response.text
+
+            elif provider == "anthropic" and self.anthropic_client:
                 message = await self.anthropic_client.messages.create(
                     model=settings.MODEL_ANALYSIS_B, # Claude 4.5 Sonnet
                     max_tokens=4096,
