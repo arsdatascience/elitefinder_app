@@ -34,6 +34,7 @@ export default defineConfig({
         "cors",
         "pg",
         "dotenv",
+        "ioredis",
       ],
       output: {
         format: "es",
