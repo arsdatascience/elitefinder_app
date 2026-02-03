@@ -9,7 +9,7 @@ router.use(authMiddleware);
 // POST /api/agent/analyze
 router.post('/analyze', async (req: AuthRequest, res) => {
     try {
-        const { conversationId, messages, context } = req.body;
+        const { conversationId, messages, context, provider } = req.body;
 
         if (!messages || !Array.isArray(messages)) {
             return res.status(400).json({ error: 'Messages array is required' });
@@ -18,7 +18,8 @@ router.post('/analyze', async (req: AuthRequest, res) => {
         const analysis = await analyzeConversation({
             conversation_id: conversationId,
             messages,
-            context
+            context,
+            provider
         });
 
         if (!analysis) {

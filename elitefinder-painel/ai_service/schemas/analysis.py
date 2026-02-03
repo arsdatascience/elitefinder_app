@@ -10,6 +10,7 @@ class AnalysisRequest(BaseModel):
     conversation_id: str
     messages: List[Message]
     context: Optional[str] = None
+    provider: Optional[str] = "openai"
 
 class AnalysisResponse(BaseModel):
     conversation_id: str

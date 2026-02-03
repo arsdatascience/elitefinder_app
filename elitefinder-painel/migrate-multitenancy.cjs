@@ -64,7 +64,7 @@ CREATE INDEX IF NOT EXISTS idx_relatorioanalise_tenant ON RelatorioAnalise(id_te
 
 async function runMigration() {
     const client = new Client({
-        connectionString: 'postgresql://postgres:JhpeglsObxrAECaOrajyWHATyhZkAOhI@interchange.proxy.rlwy.net:47458/railway',
+        connectionString: process.env.DATABASE_URL,
         ssl: { rejectUnauthorized: false }
     });
 

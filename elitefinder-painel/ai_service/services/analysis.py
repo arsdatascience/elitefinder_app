@@ -31,8 +31,8 @@ async def analyze_conversation(request: AnalysisRequest) -> AnalysisResponse:
     """
     
     # 3. Call LLM (Using OpenAI/Anthropic for Analysis)
-    # We can alternate or pick one. Defaulting to OpenAI (GPT-5.2) as per prompt implication of "main" analysis
-    response_text = await llm_service.analyze_conversation(prompt, provider="openai")
+    # Use provider from request, default to openai
+    response_text = await llm_service.analyze_conversation(prompt, provider=request.provider or "openai")
     
     # 4. Parse JSON
     try:

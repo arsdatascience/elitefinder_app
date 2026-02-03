@@ -79,7 +79,7 @@ CREATE INDEX IF NOT EXISTS idx_relatorioanalise_analise ON RelatorioAnalise(id_a
 
 async function createTables() {
     const client = new Client({
-        connectionString: 'postgresql://postgres:JhpeglsObxrAECaOrajyWHATyhZkAOhI@interchange.proxy.rlwy.net:47458/railway',
+        connectionString: process.env.DATABASE_URL,
         ssl: { rejectUnauthorized: false }
     });
 

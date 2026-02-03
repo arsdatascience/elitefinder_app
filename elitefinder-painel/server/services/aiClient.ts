@@ -7,6 +7,7 @@ export interface AnalysisRequest {
     conversation_id: string;
     messages: { role: string; content: string; timestamp?: string }[];
     context?: string;
+    provider?: string;
 }
 
 export interface AnalysisResponse {
