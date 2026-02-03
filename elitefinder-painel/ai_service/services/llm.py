@@ -37,8 +37,8 @@ class LLMService:
         """
         try:
             if provider == "gemini":
-                # Use the initialized Gemini model (or create a specific one if needed)
-                # Assuming self.gemini_model is general purpose enough (e.g. 1.5 Pro)
+                # Use Gemini 3.0 Pro for deep analysis
+                # Ensure we use the model instance initialized in __init__ or create new if needed
                 response = self.gemini_model.generate_content(prompt)
                 return response.text
 
@@ -54,7 +54,7 @@ class LLMService:
 
             elif self.openai_client: # Default to OpenAI
                 response = await self.openai_client.chat.completions.create(
-                    model=settings.MODEL_ANALYSIS_A, # GPT 5.2 Pro
+                    model=settings.MODEL_ANALYSIS_A, # GPT 5.2 Mini
                     messages=[
                         {"role": "system", "content": "You are an expert analyst."},
                         {"role": "user", "content": prompt}
@@ -72,11 +72,12 @@ class LLMService:
 
     async def analyze_media(self, media_bytes: bytes, mime_type: str, prompt: str = "Analise este arquivo.") -> str:
         """
-        Analyzes generic media (Image, Audio, PDF) using Gemini 1.5 Flash
+        Analyzes generic media (Image, Audio, PDF) using Gemini Flash
         """
         try:
             # Gemini supports Image, Audio, and PDF via the 'data' interface
-            model = genai.GenerativeModel('gemini-1.5-flash')
+            # Use configured fast model (e.g., 2.0-flash)
+            model = genai.GenerativeModel(settings.MODEL_MEDIA)
             
             response = model.generate_content([
                 prompt,

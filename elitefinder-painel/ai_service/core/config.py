@@ -18,11 +18,12 @@ class Settings(BaseSettings):
 
     # Models Configuration
     # Analysis Models (OpenAI / Anthropic)
-    MODEL_ANALYSIS_A: str = "gpt-5.2-pro"
+    MODEL_ANALYSIS_A: str = "gpt-5.2-mini"
     MODEL_ANALYSIS_B: str = "claude-4.5-sonnet"
     
     # Report Models (Gemini)
     MODEL_REPORT: str = "gemini-3.0-pro"
+    MODEL_MEDIA: str = "gemini-2.0-flash" # Updating to 2.0 Flash for speed/vision
 
     class Config:
         case_sensitive = True
