@@ -6,47 +6,31 @@ WORKDIR /app
 # Install pnpm
 RUN npm install -g pnpm
 
-# Copy package files
+# Copy package files (Root)
 COPY package.json pnpm-lock.yaml ./
 
 # Install dependencies
-RUN pnpm install
+RUN pnpm install --frozen-lockfile
 
-# Copy necessary files for server build
-COPY server ./server
-COPY shared ./shared
-COPY vite.config.server.ts ./
-COPY tsconfig.json ./
+# Copy source code
+COPY . .
 
-# Build server only
+# Build server
 RUN pnpm run build:server
 
-# ===== PRODUCTION STAGE =====
+# ===== RUN STAGE =====
 FROM node:20-alpine
 
 WORKDIR /app
 
-# Install pnpm
-RUN npm install -g pnpm
+# Copy package.json for potential runtime references
+COPY --from=builder /app/package.json ./
 
-# Copy package files
-COPY package.json pnpm-lock.yaml ./
+# Copy node_modules (Required because express, pg, etc are externalized)
+COPY --from=builder /app/node_modules ./node_modules
 
-# Install production dependencies only
-RUN pnpm install --prod
-
-# Copy built server from builder
-COPY --from=builder /app/dist/server ./dist/server
-
-# Copy shared folder if exists
-COPY --from=builder /app/shared ./shared
-
-# Expose port
-EXPOSE 3000
-
-# Health check
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD wget --quiet --tries=1 --spider http://localhost:3000/api/ping || exit 1
+# Copy built server artifacts
+COPY --from=builder /app/dist ./dist
 
 # Start the server
 CMD ["node", "dist/server/node-build.mjs"]
