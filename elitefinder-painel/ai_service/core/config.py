@@ -23,7 +23,7 @@ class Settings(BaseSettings):
     
     # Report Models (Gemini)
     MODEL_REPORT: str = "gemini-3.0-pro"
-    MODEL_MEDIA: str = "gemini-2.0-flash" # Updating to 2.0 Flash for speed/vision
+    MODEL_MEDIA: str = "gemini-3.0-flash" # Rigorous update to 3.0 Flash
 
     class Config:
         case_sensitive = True
