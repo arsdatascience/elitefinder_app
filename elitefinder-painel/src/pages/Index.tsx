@@ -23,6 +23,34 @@ export default function Index() {
   const wahaGetHeaders = { 'x-api-key': wahaApiKey };
   const wahaJsonHeaders = { 'Content-Type': 'application/json', 'x-api-key': wahaApiKey };
 
+  // Nome da sessão vinculado ao Tenant (padrão: default)
+  const [sessionName, setSessionName] = useState('default');
+
+  // Buscar dados do usuário para obter o slug do tenant correto
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+
+        const res = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000'}/api/auth/me`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          if (data.user?.tenant?.slug) {
+            setSessionName(data.user.tenant.slug);
+            console.log('Sessão vinculada ao tenant:', data.user.tenant.slug);
+          }
+        }
+      } catch (err) {
+        console.error('Erro ao buscar dados do usuário:', err);
+      }
+    };
+    fetchUser();
+  }, []);
+
   // Controle de fluxo (login → waha → dashboard) com persistência
   const [step, setStep] = useState<'login' | 'waha' | 'dashboard'>(() => {
     // Recupera o estado salvo no localStorage
@@ -289,7 +317,7 @@ export default function Index() {
         method: 'POST',
         headers: wahaJsonHeaders,
         body: JSON.stringify({
-          name: 'default',
+          name: sessionName,
           config: {
             webhooks: [
               {
@@ -387,7 +415,7 @@ export default function Index() {
       }
 
       try {
-        const res = await fetch(`${wahaBase}/api/sessions/default`, { headers: wahaGetHeaders });
+        const res = await fetch(`${wahaBase}/api/sessions/${sessionName}`, { headers: wahaGetHeaders });
         if (!res.ok) {
           if (!cancelled) setConnectionStatus('Erro ao conectar');
           return;
@@ -461,12 +489,12 @@ export default function Index() {
 
               try {
                 console.log('🔄 Iniciando auto-recovery...');
-                await fetch(`${wahaBase}/api/sessions/default/stop`, { method: 'POST', headers: wahaGetHeaders });
+                await fetch(`${wahaBase}/api/sessions/${sessionName}/stop`, { method: 'POST', headers: wahaGetHeaders });
                 await new Promise(r => setTimeout(r, 2000));
                 await fetch(`${wahaBase}/api/sessions/start`, {
                   method: 'POST',
                   headers: wahaJsonHeaders,
-                  body: JSON.stringify({ name: 'default' })
+                  body: JSON.stringify({ name: sessionName })
                 });
                 await new Promise(r => setTimeout(r, 3000));
 
@@ -511,7 +539,7 @@ export default function Index() {
     setSessionError(null);
     try {
       // Endpoint correto confirmado: GET /api/default/auth/qr
-      const res = await fetch(`${wahaBase}/api/default/auth/qr`, {
+      const res = await fetch(`${wahaBase}/api/${sessionName}/auth/qr`, {
         headers: { ...wahaGetHeaders, 'Accept': 'image/png,image/jpeg,*/*' }
       });
       if (res.ok) {
@@ -546,7 +574,7 @@ export default function Index() {
       if (attempts === 0) {
         const ensureStarted = async () => {
           try {
-            const statusRes = await fetch(`${wahaBase}/api/sessions/default`, { headers: wahaGetHeaders });
+            const statusRes = await fetch(`${wahaBase}/api/sessions/${sessionName}`, { headers: wahaGetHeaders });
             if (statusRes.ok) {
               const statusData = await statusRes.json();
               console.log('Status inicial da sessão:', statusData.status);
@@ -576,7 +604,7 @@ export default function Index() {
             // Aguarda um pouco para a sessão entrar em SCAN_QR_CODE
             setTimeout(async () => {
               try {
-                const checkRes = await fetch(`${wahaBase}/api/sessions/default`, { headers: wahaGetHeaders });
+                const checkRes = await fetch(`${wahaBase}/api/sessions/${sessionName}`, { headers: wahaGetHeaders });
                 if (checkRes.ok) {
                   const checkData = await checkRes.json();
                   console.log('Status pós-start:', checkData.status);
@@ -616,19 +644,19 @@ export default function Index() {
     setRestartStatus('Desconectando sessão...');
     try {
       // 1. Fazer logout da sessão atual
-      await fetch(`${wahaBase}/api/sessions/default/logout`, { method: 'POST', headers: wahaGetHeaders });
+      await fetch(`${wahaBase}/api/sessions/${sessionName}/logout`, { method: 'POST', headers: wahaGetHeaders });
       setRestartStatus('Aguardando desconexão...');
       await new Promise(resolve => setTimeout(resolve, 1000));
 
       // 2. Fazer stop da sessão para limpar cache
       setRestartStatus('Limpando cache da sessão...');
-      await fetch(`${wahaBase}/api/sessions/default/stop`, { method: 'POST', headers: wahaGetHeaders });
+      await fetch(`${wahaBase}/api/sessions/${sessionName}/stop`, { method: 'POST', headers: wahaGetHeaders });
       setRestartStatus('Cache limpo. Preparando reconexão...');
       await new Promise(resolve => setTimeout(resolve, 1000));
 
       // 3. Iniciar sessão novamente
       setRestartStatus('Reconectando à sessão WAHA...');
-      await fetch(`${wahaBase}/api/sessions/default/start`, { method: 'POST', headers: wahaGetHeaders });
+      await fetch(`${wahaBase}/api/sessions/${sessionName}/start`, { method: 'POST', headers: wahaGetHeaders });
 
       // 4. Aguardar e buscar novo QR
       setRestartStatus('Buscando novo QR Code...');
@@ -651,7 +679,7 @@ export default function Index() {
   // Encerrar Sessão WAHA
   const handleLogout = async () => {
     try {
-      await fetch(`${wahaBase}/api/sessions/default/logout`, { method: 'POST', headers: wahaGetHeaders });
+      await fetch(`${wahaBase}/api/sessions/${sessionName}/logout`, { method: 'POST', headers: wahaGetHeaders });
       setConnectionStatus('Desativado');
       // Limpa o localStorage ao fazer logout
       localStorage.removeItem('eliteFinder_sessionStep');

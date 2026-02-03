@@ -26,13 +26,48 @@ export default function Sessoes() {
   useEffect(() => {
     async function fetchSessoes() {
       try {
-        const res = await fetch(`${import.meta.env.VITE_WAHA_BASE}/api/sessions`, {
+        const token = localStorage.getItem('token');
+        if (!token) throw new Error('Sem token');
+
+        // 1. Identificar quem é o usuário
+        const userRes = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000'}/api/auth/me`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        let isAdmin = false;
+        let mySlug = '';
+
+        if (userRes.ok) {
+          const userData = await userRes.json();
+          const role = userData.user?.role; // admin, superadmin, atendente
+          mySlug = userData.user?.tenant?.slug;
+
+          // Superadmin pode ver tudo
+          if (role === 'superadmin') {
+            isAdmin = true;
+          }
+        }
+
+        // 2. Buscar sessões no WAHA
+        // Se for admin, busca ?all=true (se suportado pelo WAHA ou filtra no front)
+        // O WAHA padrão retorna todas as sessões no GET /api/sessions
+        const wahaBase = import.meta.env.VITE_WAHA_BASE || '/api/proxy/waha';
+        const res = await fetch(`${wahaBase}/api/sessions?all=true`, {
           headers: { 'x-api-key': import.meta.env.VITE_WAHA_API_KEY || '' }
         });
+
         const data = await res.json();
-        const arr = Array.isArray(data) ? data : Object.values(data);
+        let arr: Sessao[] = Array.isArray(data) ? data : Object.values(data);
+
+        // 3. Filtragem de Segurança
+        if (!isAdmin) {
+          // Se não for superadmin, só vê a sessão com nome == mySlug
+          arr = arr.filter(s => s.name === mySlug);
+        }
+
         setSessoes(arr);
       } catch (err) {
+        console.error(err);
         setSessoes([]);
       } finally {
         setLoading(false);
@@ -60,7 +95,7 @@ export default function Sessoes() {
           </a>
           <a href="/sessoes" className="text-black dark:text-white border-b-2 border-black dark:border-white font-roboto text-sm lg:text-base transition-colors">
             Sessões
-  </a>
+          </a>
           <a href="/configuracoes" className="text-black dark:text-white font-roboto text-sm lg:text-base hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
             Configurações
           </a>
@@ -104,7 +139,7 @@ export default function Sessoes() {
                     </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
                       {sessao.createdAt && `Criada: ${new Date(sessao.createdAt).toLocaleString()}`}
-                      {sessao.updatedAt && <><br/>Atualizada: {new Date(sessao.updatedAt).toLocaleString()}</>}
+                      {sessao.updatedAt && <><br />Atualizada: {new Date(sessao.updatedAt).toLocaleString()}</>}
                     </p>
                     <span
                       className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium w-fit ${label.color}`}
