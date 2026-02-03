@@ -1,13 +1,8 @@
 import { Router } from "express";
-import { Pool } from "pg";
+import pool from "../db";
 import { authMiddleware, AuthRequest } from "../middleware/auth";
 
 const router = Router();
-
-const pool = new Pool({
-    connectionString: process.env.DATABASE_URL || process.env.DATABASE_PUBLIC_URL,
-    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
-});
 
 router.use(authMiddleware);
 
@@ -87,8 +82,9 @@ router.get("/", async (req: AuthRequest, res) => {
 router.get("/summary", async (req: AuthRequest, res) => {
     try {
         const tenantId = req.tenantId;
-        const tenantCondition = (req.userRole !== 'admin' && req.userRole !== 'superadmin')
-            ? `AND id_tenant = ${tenantId}` : '';
+        const isAdmin = req.userRole === 'admin' || req.userRole === 'superadmin';
+        const params: any[] = [];
+        const tenantCondition = isAdmin ? '' : `AND id_tenant = $${params.push(tenantId)}`;
 
         const { rows } = await pool.query(`
       SELECT 
@@ -100,7 +96,7 @@ router.get("/summary", async (req: AuthRequest, res) => {
         COUNT(*) FILTER (WHERE lido_em IS NULL AND resolvido_em IS NULL) as nao_lidos
       FROM alerta
       WHERE 1=1 ${tenantCondition}
-    `);
+    `, params);
 
         res.json(rows[0]);
     } catch (err) {

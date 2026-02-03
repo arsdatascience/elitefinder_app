@@ -135,6 +135,8 @@ export interface Insights {
         score_medio: number;
     }>;
     sugestoes: string[];
+    strategic_insight?: string;
+    forecast?: string;
 }
 
 export async function fetchDailyReport(): Promise<DailyReport> {

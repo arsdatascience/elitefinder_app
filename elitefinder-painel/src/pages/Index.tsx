@@ -7,6 +7,7 @@ import { apiFetchMetricsOverall, apiFetchMetricsExtended, OverallAnalyticsRespon
 import { apiExportConversationsCsv, apiFetchAuditConversations, AuditConversation } from '../lib/conversationsApi';
 import { AlertBanner, AlertSummaryCard } from '../components/AlertBanner';
 import { ReportsDashboard } from '../components/ReportsDashboard';
+import { AgentAssistant } from '../components/AgentAssistant';
 
 
 // Dados simulados caso a IA não responda
@@ -1785,6 +1786,86 @@ export default function Index() {
                   )}
                 </tbody>
               </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* SEÇÃO DE CONVERSAS E AGENTE IA */}
+      <section className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[600px] mb-10">
+        {/* Lista de Conversas (Esquerda) */}
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 flex flex-col overflow-hidden">
+          <div className="p-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
+            <h3 className="font-bold text-gray-700">Conversas Recentes</h3>
+            <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded-full">{conversationsTotal}</span>
+          </div>
+          <div className="flex-1 overflow-y-auto p-2 space-y-2">
+            {conversations.map(c => (
+              <div
+                key={c.id_atendimento}
+                id={`conversation-${c.id_atendimento}`}
+                className="p-3 bg-white border border-gray-100 rounded-xl hover:bg-gray-50 cursor-pointer transition shadow-sm"
+              >
+                <div className="flex justify-between items-start mb-1">
+                  <span className="font-bold text-sm text-gray-800">{c.nome_cliente || c.telefone_cliente}</span>
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full ${c.sentimento_geral === 'Positivo' ? 'bg-green-100 text-green-700' :
+                    c.sentimento_geral === 'Negativo' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-600'
+                    }`}>
+                    {c.sentimento_geral || 'N/A'}
+                  </span>
+                </div>
+                <p className="text-xs text-gray-500 line-clamp-2 mb-2">{c.mensagem_trecho}</p>
+                <div className="flex justify-between items-center text-[10px] text-gray-400">
+                  <span>{new Date(c.data_hora).toLocaleString('pt-BR')}</span>
+                  {/* Botão Compacto do Agente */}
+                  <AgentAssistant
+                    conversationId={String(c.id_atendimento)}
+                    messages={[{ fromMe: false, body: c.mensagem_trecho, timestamp: c.data_hora }]} // Mock messages for listing
+                    compact={true}
+                  />
+                </div>
+              </div>
+            ))}
+            {conversations.length === 0 && (
+              <div className="text-center py-10 text-gray-400 text-sm">Nenhuma conversa encontrada</div>
+            )}
+          </div>
+        </div>
+
+        {/* Área de Detalhes / Agente Completo (Direita - 2 Colunas) */}
+        <div className="lg:col-span-2 bg-white rounded-2xl shadow-lg border border-gray-100 flex flex-col overflow-hidden relative">
+          {/* 
+                Em uma implementação real completa, aqui teríamos o chat completo selecionado.
+                Como estamos focando na integração do Agente:
+            */}
+          <div className="absolute inset-0 flex items-center justify-center bg-slate-50 opacity-50 z-0">
+            <div className="text-center">
+              <p className="text-gray-400 text-sm">Selecione uma conversa para ver detalhes e análise completa</p>
+            </div>
+          </div>
+
+          {/* Visualização de Exemplo do Agente Expandido (Demonstração) */}
+          <div className="w-full h-full z-10 flex">
+            <div className="flex-1 border-r border-gray-200 p-4 bg-white/80 backdrop-blur">
+              <h3 className="font-bold text-gray-700 mb-4">Chat em Tempo Real</h3>
+              {/* Chat Mock */}
+              <div className="space-y-4">
+                <div className="flex justify-start"><span className="bg-gray-100 p-2 rounded-lg text-sm text-gray-700">Olá, gostaria de cancelar meu plano.</span></div>
+                <div className="flex justify-end"><span className="bg-indigo-600 text-white p-2 rounded-lg text-sm">Boa tarde! Poxa, que pena. Posso saber o motivo?</span></div>
+                <div className="flex justify-start"><span className="bg-gray-100 p-2 rounded-lg text-sm text-gray-700">Achei o serviço muito caro e o atendimento demorado.</span></div>
+              </div>
+            </div>
+
+            {/* Painel do Super Agente */}
+            <div className="w-80 sm:w-96 h-full shadow-2xl">
+              <AgentAssistant
+                conversationId="demo-123"
+                messages={[
+                  { fromMe: false, body: "Olá, gostaria de cancelar meu plano.", timestamp: new Date().toISOString() },
+                  { fromMe: true, body: "Boa tarde! Poxa, que pena. Posso saber o motivo?", timestamp: new Date().toISOString() },
+                  { fromMe: false, body: "Achei o serviço muito caro e o atendimento demorado.", timestamp: new Date().toISOString() }
+                ]}
+              />
             </div>
           </div>
         </div>

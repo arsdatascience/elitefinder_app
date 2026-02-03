@@ -1,14 +1,8 @@
 import { Router } from "express";
-import { Pool } from "pg";
+import pool from "../db";
 import { authMiddleware, AuthRequest } from "../middleware/auth";
 
 const router = Router();
-
-// Configure Postgres pool from env or defaults (docker-compose values)
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL || process.env.DATABASE_PUBLIC_URL,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
-});
 
 // Middleware para garantir que todas as rotas de analytics verifiquem o tenant
 router.use(authMiddleware);

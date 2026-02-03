@@ -1,14 +1,9 @@
 import { Router, Response } from 'express';
-import { Pool } from 'pg';
+import pool from '../db';
 import bcrypt from 'bcryptjs';
 import { authMiddleware, requireRole, AuthRequest } from '../middleware/auth';
 
 const router = Router();
-
-const pool = new Pool({
-    connectionString: process.env.DATABASE_URL || process.env.DATABASE_PUBLIC_URL,
-    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
-});
 
 // All admin routes require authentication and admin/gerente/superadmin role
 router.use(authMiddleware);
@@ -191,10 +186,13 @@ router.patch('/users/:id', async (req: AuthRequest, res: Response) => {
         values.push(id);
 
         // Gerente só pode editar usuários do próprio tenant
-        const tenantFilter = req.userRole === 'admin' ? '' : `AND id_tenant = ${req.tenantId}`;
+        const tenantFilter = req.userRole === 'admin' ? '' : `AND id_tenant = $${++paramCount}`;
+        if (req.userRole !== 'admin') {
+            values.push(req.tenantId);
+        }
 
         const result = await pool.query(
-            `UPDATE Usuario SET ${updates.join(', ')} WHERE id_usuario = $${paramCount} ${tenantFilter} RETURNING id_usuario, nome, email`,
+            `UPDATE Usuario SET ${updates.join(', ')} WHERE id_usuario = $${paramCount - (req.userRole !== 'admin' ? 1 : 0)} ${tenantFilter} RETURNING id_usuario, nome, email`,
             values
         );
 

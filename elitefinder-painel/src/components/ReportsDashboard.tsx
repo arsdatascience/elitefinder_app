@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { BarChart3, TrendingUp, Users, Calendar, Award, Lightbulb, Clock } from 'lucide-react';
+import { BarChart3, TrendingUp, Users, Calendar, Award, Lightbulb, Clock, Brain, Sparkles } from 'lucide-react';
 import { fetchDailyReport, fetchWeeklyReport, fetchInsights, DailyReport, WeeklyReport, Insights } from '../lib/alertsApi';
 
 export function ReportsDashboard() {
@@ -248,6 +248,35 @@ function WeeklyReportView({ report }: { report: WeeklyReport }) {
 function InsightsView({ data }: { data: Insights }) {
     return (
         <div className="space-y-4">
+            {/* AI Strategic Insight */}
+            {data.strategic_insight && (
+                <div className="bg-gradient-to-r from-indigo-900 to-purple-900 border border-indigo-500/50 rounded-lg p-5 shadow-lg relative overflow-hidden">
+                    <div className="absolute top-0 right-0 p-4 opacity-10">
+                        <Brain className="w-24 h-24 text-white" />
+                    </div>
+                    <h4 className="text-white font-bold text-lg mb-2 flex items-center gap-2">
+                        <Sparkles className="w-5 h-5 text-yellow-400" />
+                        Análise Estratégica da IA
+                    </h4>
+                    <p className="text-indigo-100 text-sm leading-relaxed whitespace-pre-line relative z-10">
+                        {data.strategic_insight}
+                    </p>
+                </div>
+            )}
+
+            {/* AI Forecast */}
+            {data.forecast && (
+                <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4">
+                    <h4 className="text-blue-400 font-medium mb-2 flex items-center gap-2">
+                        <TrendingUp className="w-4 h-4" />
+                        Previsão de Tendência
+                    </h4>
+                    <p className="text-gray-300 text-sm italic">
+                        "{data.forecast}"
+                    </p>
+                </div>
+            )}
+
             {/* Sugestões */}
             <div className="bg-indigo-500/10 border border-indigo-500/30 rounded-lg p-4">
                 <h4 className="text-indigo-400 font-medium mb-2 flex items-center gap-2">

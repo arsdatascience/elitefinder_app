@@ -1,14 +1,9 @@
 import { Router, Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
-import { Pool } from 'pg';
+import pool from '../db';
 import { generateToken, authMiddleware, AuthRequest } from '../middleware/auth';
 
 const router = Router();
-
-const pool = new Pool({
-    connectionString: process.env.DATABASE_URL || process.env.DATABASE_PUBLIC_URL,
-    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
-});
 
 // POST /api/auth/register - Registrar novo usuário
 router.post('/register', async (req: Request, res: Response) => {
