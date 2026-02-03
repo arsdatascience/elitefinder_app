@@ -6,7 +6,10 @@ import os
 # Use DATABASE_URL from environment or fallback
 DATABASE_URL = settings.DATABASE_URL or os.getenv("DATABASE_URL")
 
+print(f"DEBUG: DATABASE_URL found? {'Yes' if DATABASE_URL else 'No'}")
+
 if not DATABASE_URL:
+    print("❌ Critical Error: DATABASE_URL is missing from environment variables.")
     raise ValueError("DATABASE_URL is not set")
 
 # Handle 'postgres://' vs 'postgresql://' for SQLAlchemy

@@ -1,6 +1,9 @@
 from fastapi import FastAPI, Depends
 from core.config import settings
 from core.security import get_api_key
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
