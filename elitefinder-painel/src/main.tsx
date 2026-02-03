@@ -9,11 +9,15 @@ import Configuracoes from "./pages/Configuracoes";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfUse from "./pages/TermsOfUse";
 import NotFound from "./pages/NotFound";
+import Login from "./pages/Login";
+import Admin from "./pages/Admin";
 
 const App = () => (
     <BrowserRouter>
         <Routes>
             <Route path="/" element={<Home />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/admin" element={<Admin />} />
             <Route path="/dashboard" element={<Index />} />
             <Route path="/sessoes" element={<Sessoes />} />
             <Route path="/atendimentos" element={<Atendimentos />} />

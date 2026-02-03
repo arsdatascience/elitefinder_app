@@ -1,25 +1,43 @@
 import { Router } from "express";
 import { Pool } from "pg";
+import { authMiddleware, AuthRequest } from "../middleware/auth";
 
 const router = Router();
 
 // Configure Postgres pool from env or defaults (docker-compose values)
 const pool = new Pool({
-  host: process.env.DB_HOST || "localhost",
-  port: Number(process.env.DB_PORT || 5432),
-  user: process.env.DB_USER || "postgres",
-  password: process.env.DB_PASSWORD || "Elitefinder2025",
-  database: process.env.DB_NAME || "postgres",
+  connectionString: process.env.DATABASE_URL || process.env.DATABASE_PUBLIC_URL,
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
 });
 
+// Middleware para garantir que todas as rotas de analytics verifiquem o tenant
+router.use(authMiddleware);
+
+// Helper para obter filtro de tenant
+const getTenantFilter = (req: AuthRequest, tableAlias?: string) => {
+  if (req.userRole === 'admin') return ''; // Admin vê tudo
+  const prefix = tableAlias ? `${tableAlias}.` : '';
+  return `${prefix}id_tenant = ${req.tenantId}`;
+};
+
+// Helper para adicionar WHERE clause
+const addWhere = (existingWhere: string, condition: string) => {
+  if (!condition) return existingWhere;
+  return existingWhere ? `${existingWhere} AND ${condition}` : `WHERE ${condition}`;
+};
+
 // List conversations with basic fields from mensagem + atendimento
-router.get("/conversations", async (req, res) => {
+router.get("/conversations", async (req: AuthRequest, res) => {
   try {
     const limit = Number(req.query.limit || 50);
+    const tenantFilter = getTenantFilter(req, 'm');
+    const whereClause = addWhere('', tenantFilter);
+
     const { rows } = await pool.query(
       `SELECT m.*, a.*
        FROM public.mensagem m
        LEFT JOIN public.atendimento a ON a.id_atendimento = m.id_atendimento
+       ${whereClause}
        ORDER BY m.id_mensagem DESC
        LIMIT $1`,
       [limit]
@@ -32,12 +50,16 @@ router.get("/conversations", async (req, res) => {
 });
 
 // Export conversations CSV
-router.get("/conversations/export/csv", async (_req, res) => {
+router.get("/conversations/export/csv", async (req: AuthRequest, res) => {
   try {
+    const tenantFilter = getTenantFilter(req, 'm');
+    const whereClause = addWhere('', tenantFilter);
+
     const { rows } = await pool.query(
       `SELECT m.*, a.*
        FROM public.mensagem m
        LEFT JOIN public.atendimento a ON a.id_atendimento = m.id_atendimento
+       ${whereClause}
        ORDER BY m.id_mensagem DESC
        LIMIT 1000`
     );
@@ -64,12 +86,16 @@ router.get("/conversations/export/csv", async (_req, res) => {
 });
 
 // Export CSV of AI analysis from analisequalidade table
-router.get("/export/csv", async (_req, res) => {
+router.get("/export/csv", async (req: AuthRequest, res) => {
   try {
+    const tenantFilter = getTenantFilter(req);
+    const whereClause = addWhere('', tenantFilter);
+
     // First, get all columns dynamically to avoid hardcoding
     const { rows } = await pool.query(
       `SELECT *
        FROM public.analisequalidade
+       ${whereClause}
        ORDER BY id_analise DESC
        LIMIT 1000`
     );
@@ -97,7 +123,7 @@ router.get("/export/csv", async (_req, res) => {
 });
 
 // Export custom sales report CSV with specific columns
-router.get("/sales-report/export/csv", async (req, res) => {
+router.get("/sales-report/export/csv", async (req: AuthRequest, res) => {
   try {
     const startDate = req.query.startDate as string | undefined;
     const endDate = req.query.endDate as string | undefined;
@@ -105,15 +131,23 @@ router.get("/sales-report/export/csv", async (req, res) => {
     console.log('[SALES REPORT] Starting export...');
     console.log('[SALES REPORT] Date filters:', { startDate, endDate });
 
-    // Build WHERE clause for date filtering
-    let dateFilter = '';
+    // Build WHERE clause for date filtering AND tenant filtering
+    let whereConditions: string[] = [];
     const queryParams: any[] = [];
+    let paramCount = 1;
+
+    // Tenant filter
+    const tenantFilter = getTenantFilter(req, 'a');
+    if (tenantFilter) whereConditions.push(tenantFilter);
 
     if (startDate && endDate) {
       // Usar DATE() para comparar apenas a data, ignorando a hora
-      dateFilter = 'WHERE DATE(a.data_hora_inicio) >= $1::date AND DATE(a.data_hora_inicio) <= $2::date';
+      whereConditions.push(`DATE(a.data_hora_inicio) >= $${paramCount++}::date`);
+      whereConditions.push(`DATE(a.data_hora_inicio) <= $${paramCount++}::date`);
       queryParams.push(startDate, endDate);
     }
+
+    const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
 
     // Query baseada EXATAMENTE na estrutura das tabelas:
     // - mensagem: id_mensagem, id_atendimento, conteudo_texto, data_hora_envio, remetente_tipo, tipo_analise
@@ -137,7 +171,7 @@ router.get("/sales-report/export/csv", async (req, res) => {
        FROM public.atendimento a
        INNER JOIN public.mensagem m ON m.id_atendimento = a.id_atendimento
        LEFT JOIN public.analisequalidade aq ON aq.id_atendimento = a.id_atendimento
-       ${dateFilter}
+       ${whereClause}
        GROUP BY a.id_atendimento, a.nome_cliente, a.id_cliente
        ORDER BY a.id_atendimento, MIN(m.data_hora_envio) DESC
        LIMIT 1000`,
@@ -171,10 +205,13 @@ router.get("/sales-report/export/csv", async (req, res) => {
 });
 
 // List all atendimentos with analysis data (JSON format)
-router.get("/atendimentos", async (req, res) => {
+router.get("/atendimentos", async (req: AuthRequest, res) => {
   try {
     const limit = Number(req.query.limit || 100);
     const offset = Number(req.query.offset || 0);
+
+    const tenantFilter = getTenantFilter(req, 'a');
+    const whereClause = addWhere('', tenantFilter);
 
     const { rows } = await pool.query(
       `SELECT
@@ -213,6 +250,7 @@ router.get("/atendimentos", async (req, res) => {
        FROM public.atendimento a
        LEFT JOIN public.analisequalidade aq ON aq.id_atendimento = a.id_atendimento
        LEFT JOIN public.mensagem m ON m.id_atendimento = a.id_atendimento
+       ${whereClause}
        GROUP BY
          a.id_atendimento, a.nome_cliente, a.id_cliente, a.telefone_cliente,
          a.id_atendente, a.data_hora_inicio, a.data_hora_fim, a.status_atendimento,
@@ -229,7 +267,8 @@ router.get("/atendimentos", async (req, res) => {
     // Get total count
     const { rows: countRows } = await pool.query(
       `SELECT COUNT(DISTINCT a.id_atendimento) as total
-       FROM public.atendimento a`
+       FROM public.atendimento a
+       ${whereClause}`
     );
 
     res.json({
