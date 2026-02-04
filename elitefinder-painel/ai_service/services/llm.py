@@ -25,7 +25,7 @@ class LLMService:
         from sqlalchemy import select
         if not db: return None
         try:
-            result = await db.execute(select(AgentConfig).where(AgentConfig.provider == provider))
+            result = db.execute(select(AgentConfig).where(AgentConfig.provider == provider))
             return result.scalar_one_or_none()
         except:
             return None

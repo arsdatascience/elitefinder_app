@@ -19,8 +19,8 @@ def health_check():
 @app.on_event("startup")
 async def startup_event():
     from core.database import engine, Base
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    # Sync engine requires sync call
+    Base.metadata.create_all(bind=engine)
 
 from schemas.analysis import AnalysisRequest, AnalysisResponse
 from services.analysis import analyze_conversation
